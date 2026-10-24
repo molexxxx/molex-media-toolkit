@@ -2,6 +2,24 @@
 
 All notable changes to the audio normalization tool are documented here.
 
+## [5.2.0] - 2026-10-24 - Updates that install themselves, and a Linux AppImage
+
+### Added
+
+- **Background updates.** molexMedia checks for a new version a few
+  seconds after launch, every 30 minutes, and when its window comes back
+  after a while, and downloads it in the background. A notice then offers
+  Restart to install: the update installs without the installer's windows
+  and molexMedia opens again on the new version. Choose Later and it
+  installs the next time you quit. A running batch holds the restart back
+  until it finishes, and a ready update also raises a system notification
+  while the window is out of sight. The switch is in Settings, Application.
+- **Linux AppImage.** `molexMedia-<version>-x86_64.AppImage` runs on most
+  distributions without installing and updates itself like the Windows
+  and macOS builds. It uses the static AppImage runtime, so it does not
+  need libfuse2, and carries AppStream metadata and AppImageUpdate
+  information. The .deb and .rpm packages are still published.
+
 ## [5.1.1] - 2026-10-24 - Frame rates in the Editor
 
 ### Fixed
