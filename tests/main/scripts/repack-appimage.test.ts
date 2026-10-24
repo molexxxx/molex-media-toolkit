@@ -7,7 +7,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { defaultUpdateInfo, manifestAppImageName, patchManifest } from '../../../scripts/repack-appimage.mjs'
+import { checkLauncher, defaultUpdateInfo, manifestAppImageName, patchManifest } from '../../../scripts/repack-appimage.mjs'
 
 const MANIFEST = [
   'version: 5.2.0',
@@ -38,6 +38,16 @@ beforeEach(() =>
 afterEach(() =>
 {
   fs.rmSync(dir, { recursive: true, force: true })
+})
+
+describe('the launcher check', () =>
+{
+  it('accepts a launcher that falls back to --no-sandbox where user namespaces are restricted, and refuses one without', () =>
+  {
+    const probe = 'if [ $HAVE_NO_SANDBOX -eq 0 ] && ! unshare -Ur true 2>/dev/null ; then\n  NO_SANDBOX=(--no-sandbox)\nfi'
+    expect(() => checkLauncher(`#!/usr/bin/env bash\n${probe}\nexec "$BIN" "\${NO_SANDBOX[@]}"`)).not.toThrow()
+    expect(() => checkLauncher('#!/usr/bin/env bash\nexec "$BIN" "$@"')).toThrow('no user-namespace probe')
+  })
 })
 
 describe('the repack manifest', () =>

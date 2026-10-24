@@ -53,6 +53,19 @@ function log(message)
   process.stdout.write(`[repack] ${message}\n`)
 }
 
+/**
+ * Refuses a launcher without electron-builder's user-namespace probe. Ubuntu 24.04 and later restrict unprivileged
+ * user namespaces, so Chromium's sandbox cannot start from an AppImage there; the probe adds --no-sandbox only then,
+ * and without it the app would abort at launch.
+ */
+export function checkLauncher(appRun)
+{
+  if (!appRun.includes('unshare -Ur true') || !appRun.includes('--no-sandbox'))
+  {
+    throw new Error('AppRun has no user-namespace probe; the AppImage would not start where user namespaces are restricted')
+  }
+}
+
 /** AppImageUpdate spec for this repository's latest release, with the version wildcarded. */
 export function defaultUpdateInfo(name, version)
 {
@@ -223,6 +236,7 @@ async function main()
     const appDir = path.join(work, 'squashfs-root')
     run('unsquashfs', ['-no-xattrs', '-no-progress', '-d', appDir, '-o', payloadOffset(original), original])
     if (!fs.existsSync(path.join(appDir, 'AppRun'))) throw new Error('extracted AppDir has no AppRun')
+    checkLauncher(fs.readFileSync(path.join(appDir, 'AppRun'), 'utf8'))
     if (!fs.existsSync(path.join(appDir, DESKTOP_FILE))) throw new Error(`extracted AppDir has no ${DESKTOP_FILE}`)
 
     const metaDir = path.join(appDir, 'usr', 'share', 'metainfo')
