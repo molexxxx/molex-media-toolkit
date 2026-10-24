@@ -145,7 +145,7 @@ export function installers(release)
 {
     const assets = release?.assets || [];
     const find = (ext) => assets.find((a) => a.name.toLowerCase().endsWith(ext)) || null;
-    return { windows: find('.exe'), mac: find('.dmg'), deb: find('.deb'), rpm: find('.rpm') };
+    return { windows: find('.exe'), mac: find('.dmg'), appimage: find('.appimage'), deb: find('.deb'), rpm: find('.rpm') };
 }
 
 /**

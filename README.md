@@ -121,9 +121,9 @@ Download the installer for your platform from the [latest release](https://githu
 |----------|---------|
 | Windows (x64) | `molexMedia-<version>-Windows-Setup.exe`, an installer that lets you choose the folder |
 | macOS (Intel and Apple Silicon) | `molexMedia-<version>-macOS-Installer.dmg`, one universal build |
-| Linux (x64) | `molexMedia-<version>-Linux-Installer.deb` or `.rpm` |
+| Linux (x64) | `molexMedia-<version>-x86_64.AppImage`, which runs on most distributions, or `molexMedia-<version>-Linux-Installer.deb` or `.rpm` |
 
-The app checks GitHub Releases for updates and installs them itself; the switch is in Settings, Application, and an update waits while a batch runs.
+The app checks GitHub Releases for updates, downloads a new version in the background, and offers to restart and install it; otherwise it installs the next time you quit. The switch is in Settings, Application, and a restart waits while a batch runs. On Linux the AppImage updates itself this way; the .deb and .rpm packages are updated by downloading the new package.
 
 Requirements: a 64-bit Windows, macOS, or Linux system, and a network connection on first run for the FFmpeg download (55 to 194 MB depending on the platform) unless you point the app at an FFmpeg already installed. GPU encoding is optional and uses NVIDIA NVENC, Intel QSV, or AMD AMF when one is present.
 

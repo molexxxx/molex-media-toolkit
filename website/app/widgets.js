@@ -130,6 +130,17 @@ $.component('get-block', {
             </div>`;
         }
 
+        if (platform === 'linux' && files.appimage)
+        {
+            const pkgLink = (kind) => (files[kind] ? `<a href="${$.escapeHtml(files[kind].browser_download_url)}">.${kind}</a>` : `.${kind}`);
+            return `<div class="get">
+                <a class="btn btn-primary btn-lg" href="${$.escapeHtml(files.appimage.browser_download_url)}">${icon('download', 20)}Download for Linux</a>
+                <p class="get-meta">${fileMeta(files.appimage, 'x64 AppImage')}</p>
+                <p class="get-file">The AppImage runs on most distributions and updates itself. Or install the ${pkgLink('deb')} or ${pkgLink('rpm')} package.</p>
+                ${retry}${terms}${more}
+            </div>`;
+        }
+
         if (platform === 'linux')
         {
             const first = linuxPackage();
@@ -249,11 +260,17 @@ $.component('platform-list', {
                 'Runs natively on Apple Silicon and Intel. Updates itself from GitHub Releases.',
                 [button(files.mac, 'Download .dmg', detected === 'mac')],
                 `${file(files.mac)}<p>Open the disk image and drag molexMedia to Applications. On Apple Silicon the app installs FFmpeg 7.1.1 rather than 9.0.2: the newer arm64 builds misread the loudness of surround sound, and 7.1.1 measures it correctly.</p>`),
-            row('linux', 'Linux',
-                spec(['x64', files.deb ? `.deb ${size(files.deb)}` : '.deb', files.rpm ? `.rpm ${size(files.rpm)}` : '.rpm']),
-                '.deb for Debian and Ubuntu, .rpm for Fedora and openSUSE.',
-                [button(files.deb, '.deb', detected === 'linux' && pkg === 'deb'), button(files.rpm, '.rpm', detected === 'linux' && pkg === 'rpm')],
-                `<p>Install the package from the folder you saved it to:</p>${cmd('deb', `sudo apt install ./${files.deb?.name || 'molexMedia-VERSION-Linux-Installer.deb'}`)}${cmd('rpm', `sudo dnf install ./${files.rpm?.name || 'molexMedia-VERSION-Linux-Installer.rpm'}`)}<p>Linux packages do not update themselves. Download the new package when a release comes out.</p>`),
+            files.appimage
+                ? row('linux', 'Linux',
+                    spec(['x64', `AppImage ${size(files.appimage)}`, files.deb ? `.deb ${size(files.deb)}` : '.deb', files.rpm ? `.rpm ${size(files.rpm)}` : '.rpm']),
+                    'The AppImage runs on most distributions and updates itself. .deb for Debian and Ubuntu, .rpm for Fedora and openSUSE.',
+                    [button(files.appimage, 'AppImage', detected === 'linux'), button(files.deb, '.deb', false), button(files.rpm, '.rpm', false)],
+                    `${file(files.appimage)}<p>Make the AppImage executable and run it:</p>${cmd('appimage', `chmod +x ./${files.appimage.name} && ./${files.appimage.name}`)}<p>Or install a package from the folder you saved it to:</p>${cmd('deb', `sudo apt install ./${files.deb?.name || 'molexMedia-VERSION-Linux-Installer.deb'}`)}${cmd('rpm', `sudo dnf install ./${files.rpm?.name || 'molexMedia-VERSION-Linux-Installer.rpm'}`)}<p>The AppImage updates itself like the Windows and macOS builds. The .deb and .rpm packages do not; download the new package when a release comes out.</p>`)
+                : row('linux', 'Linux',
+                    spec(['x64', files.deb ? `.deb ${size(files.deb)}` : '.deb', files.rpm ? `.rpm ${size(files.rpm)}` : '.rpm']),
+                    '.deb for Debian and Ubuntu, .rpm for Fedora and openSUSE.',
+                    [button(files.deb, '.deb', detected === 'linux' && pkg === 'deb'), button(files.rpm, '.rpm', detected === 'linux' && pkg === 'rpm')],
+                    `<p>Install the package from the folder you saved it to:</p>${cmd('deb', `sudo apt install ./${files.deb?.name || 'molexMedia-VERSION-Linux-Installer.deb'}`)}${cmd('rpm', `sudo dnf install ./${files.rpm?.name || 'molexMedia-VERSION-Linux-Installer.rpm'}`)}<p>Linux packages do not update themselves. Download the new package when a release comes out.</p>`),
         ];
 
         const head = failed
