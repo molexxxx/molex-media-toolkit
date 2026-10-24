@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>com.molexxxx.molexmedia</id>
+  <metadata_license>MIT</metadata_license>
+  <project_license>MIT</project_license>
+  <name>molexMedia</name>
+  <summary>Batch, trim, and play media on FFmpeg</summary>
+  <developer id="com.molexxxx">
+    <name>molexxxx</name>
+  </developer>
+  <description>
+    <p>molexMedia is a desktop toolkit built on FFmpeg. It normalizes whole folders to named loudness standards such as EBU R 128, ATSC A/85, and Apple Podcasts, converts and compresses with the GPU, extracts audio, frames, GIFs, and subtitles, trims and edits on a timeline, and plays local files and links.</p>
+    <p>Every finished batch job is measured again and stamped with the loudness and true peak of its output. molexMedia downloads and verifies its own FFmpeg the first time it runs.</p>
+  </description>
+  <launchable type="desktop-id">molex-media.desktop</launchable>
+  <url type="homepage">https://media.molex.cloud</url>
+  <url type="bugtracker">https://github.com/molexxxx/molex-media-toolkit/issues</url>
+  <url type="vcs-browser">https://github.com/molexxxx/molex-media-toolkit</url>
+  <screenshots>
+    <screenshot type="default">
+      <caption>The Dashboard with the queue, the machine's readiness, and the latest jobs</caption>
+      <image>https://raw.githubusercontent.com/molexxxx/molex-media-toolkit/main/.github/assets/dashboard.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Batch with jobs in the queue and the inspector</caption>
+      <image>https://raw.githubusercontent.com/molexxxx/molex-media-toolkit/main/.github/assets/sections/batch.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Trim in the Editor with the export panel</caption>
+      <image>https://raw.githubusercontent.com/molexxxx/molex-media-toolkit/main/.github/assets/sections/editor-trim.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>The Player showing a video with its playlist</caption>
+      <image>https://raw.githubusercontent.com/molexxxx/molex-media-toolkit/main/.github/assets/sections/player-video.png</image>
+    </screenshot>
+  </screenshots>
+  <categories>
+    <category>AudioVideo</category>
+    <category>Audio</category>
+    <category>Video</category>
+  </categories>
+  <provides>
+    <binary>molex-media</binary>
+  </provides>
+  <content_rating type="oars-1.1" />
+  <releases>
+    <release version="@VERSION@" date="@DATE@" />
+  </releases>
+</component>

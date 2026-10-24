@@ -1,0 +1,274 @@
+#!/usr/bin/env node
+/**
+ * Repacks the electron-builder AppImage with appimagetool so the published
+ * file ships the static AppImage runtime (no libfuse2 dependency), embeds
+ * AppImageUpdate update information with a companion .zsync file, and carries
+ * AppStream metadata. latest-linux.yml is rewritten with the new checksum and
+ * size so electron-updater keeps verifying the replaced file.
+ *
+ * The image is unpacked with unsquashfs, which keeps the stored permissions
+ * (the AppImage runtime's own extraction writes every directory as 0700),
+ * permissions are normalized, and the finished image is listed and rejected
+ * if any entry would be unreachable under a sandbox that enforces them.
+ *
+ * appimagetool and the runtime are pinned releases, checked against their
+ * SHA-256 before use.
+ *
+ * Requires unsquashfs (squashfs-tools) on PATH.
+ *
+ * Usage: node scripts/repack-appimage.mjs [dist-dir]
+ *
+ * Environment:
+ *   APPIMAGE_UPDATE_INFO  update information to embed (defaults to the
+ *                         gh-releases-zsync spec for this repository)
+ */
+import { spawnSync } from 'node:child_process'
+import { createHash } from 'node:crypto'
+import fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
+import { pipeline } from 'node:stream/promises'
+import { Readable } from 'node:stream'
+import { fileURLToPath } from 'node:url'
+import { findPermissionProblems, normalizeTree, parseListing } from './appimage-permissions.mjs'
+
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
+const APPSTREAM_ID = 'com.molexxxx.molexmedia'
+const APPSTREAM_FILE = `${APPSTREAM_ID}.appdata.xml`
+const DESKTOP_FILE = 'molex-media.desktop'
+const UPDATE_INFO_PREFIX = 'gh-releases-zsync|molexxxx|molex-media-toolkit|latest|'
+
+// appimagetool 1.9.1 and type2-runtime 20251108 from their GitHub releases.
+const APPIMAGETOOL = {
+  url: 'https://github.com/AppImage/appimagetool/releases/download/1.9.1/appimagetool-x86_64.AppImage',
+  sha256: 'ed4ce84f0d9caff66f50bcca6ff6f35aae54ce8135408b3fa33abfc3cb384eb0',
+}
+const RUNTIME = {
+  url: 'https://github.com/AppImage/type2-runtime/releases/download/20251108/runtime-x86_64',
+  sha256: '2fca8b443c92510f1483a883f60061ad09b46b978b2631c807cd873a47ec260d',
+}
+
+function log(message)
+{
+  process.stdout.write(`[repack] ${message}\n`)
+}
+
+/** AppImageUpdate spec for this repository's latest release, with the version wildcarded. */
+export function defaultUpdateInfo(name, version)
+{
+  const pattern = name.includes(version) ? name.replace(version, '*') : name
+  return `${UPDATE_INFO_PREFIX}${pattern}.zsync`
+}
+
+/** Published AppImage name from latest-linux.yml, which can differ from the local file name. */
+export function manifestAppImageName(raw)
+{
+  const urls = [...raw.matchAll(/^\s+- url: (.+\.AppImage)\s*$/gm)].map(match => match[1].trim())
+  if (urls.length !== 1) throw new Error(`Expected one AppImage entry in latest-linux.yml, found ${urls.length}`)
+  return urls[0]
+}
+
+function run(command, args, options = {})
+{
+  const result = spawnSync(command, args, {
+    stdio: ['ignore', 'pipe', 'pipe'],
+    maxBuffer: 64 * 1024 * 1024,
+    ...options,
+  })
+  if (result.error) throw result.error
+  if (result.status !== 0)
+  {
+    const tail = `${String(result.stderr)}\n${String(result.stdout)}`.trim().slice(-4000)
+    throw new Error(`${path.basename(command)} ${args.join(' ')} exited with ${result.status}\n${tail}`)
+  }
+  return String(result.stdout)
+}
+
+function requireTool(name)
+{
+  const result = spawnSync('sh', ['-c', `command -v ${name}`], { stdio: ['ignore', 'pipe', 'ignore'] })
+  if (result.status !== 0) throw new Error(`${name} is required; install squashfs-tools`)
+}
+
+/** Byte offset of the squashfs payload behind the AppImage runtime. */
+function payloadOffset(appImage)
+{
+  const offset = run(appImage, ['--appimage-offset']).trim()
+  if (!/^\d+$/.test(offset)) throw new Error(`${path.basename(appImage)} reported an invalid offset: "${offset}"`)
+  return offset
+}
+
+/** Rejects an image whose entries a permission-enforcing mount could not reach. */
+function verifyImage(appImage)
+{
+  const listing = run('unsquashfs', ['-lls', '-d', 'R', '-o', payloadOffset(appImage), appImage])
+  const problems = findPermissionProblems(parseListing(listing), {
+    required: [`usr/share/metainfo/${APPSTREAM_FILE}`, DESKTOP_FILE, 'resources/app.asar'],
+  })
+  if (problems.length)
+  {
+    const shown = problems.slice(0, 20).map(problem => `  ${problem}`).join('\n')
+    const more = problems.length > 20 ? `\n  ... and ${problems.length - 20} more` : ''
+    throw new Error(`${path.basename(appImage)} failed the permission check:\n${shown}${more}`)
+  }
+}
+
+async function sha256Hex(file)
+{
+  const hash = createHash('sha256')
+  for await (const chunk of fs.createReadStream(file)) hash.update(chunk)
+  return hash.digest('hex')
+}
+
+/** Downloads a pinned file and refuses it unless its SHA-256 matches the pin. */
+async function downloadPinned(pin, destination)
+{
+  const response = await fetch(pin.url, { redirect: 'follow' })
+  if (!response.ok || !response.body) throw new Error(`Download failed (${response.status}) ${pin.url}`)
+  await pipeline(Readable.fromWeb(response.body), fs.createWriteStream(destination))
+  const actual = await sha256Hex(destination)
+  if (actual !== pin.sha256) throw new Error(`${pin.url} has SHA-256 ${actual}, expected ${pin.sha256}`)
+}
+
+async function sha512Base64(file)
+{
+  const hash = createHash('sha512')
+  for await (const chunk of fs.createReadStream(file)) hash.update(chunk)
+  return hash.digest('base64')
+}
+
+/**
+ * Rewrites the AppImage entry of latest-linux.yml with the repacked file's
+ * checksum and size. The embedded block map is gone after the repack, so its
+ * size field is dropped and electron-updater falls back to a full download.
+ */
+export function patchManifest(manifestPath, name, sha512, size)
+{
+  const raw = fs.readFileSync(manifestPath, 'utf8')
+  const eol = raw.includes('\r\n') ? '\r\n' : '\n'
+  const lines = raw.split(eol)
+  let inEntry = false
+  let touched = 0
+  for (let i = 0; i < lines.length; i++)
+  {
+    const line = lines[i]
+    if (/^\s+- url: /.test(line)) inEntry = line.trim() === `- url: ${name}`
+    else if (/^\S/.test(line)) inEntry = false
+    if (!inEntry) continue
+    if (/^\s+sha512: /.test(line))
+    {
+      lines[i] = line.replace(/sha512: .*/, `sha512: ${sha512}`)
+      touched++
+    }
+    else if (/^\s+size: /.test(line))
+    {
+      lines[i] = line.replace(/size: .*/, `size: ${size}`)
+      touched++
+    }
+    else if (/^\s+blockMapSize: /.test(line))
+    {
+      lines.splice(i, 1)
+      i--
+    }
+  }
+  if (touched < 2) throw new Error(`latest-linux.yml has no files entry for ${name}`)
+
+  const pathIndex = lines.findIndex(line => line.startsWith('path: '))
+  if (pathIndex !== -1 && lines[pathIndex].slice('path: '.length).trim() === name)
+  {
+    const shaIndex = lines.findIndex(line => line.startsWith('sha512: '))
+    if (shaIndex === -1) throw new Error('latest-linux.yml has no top-level sha512')
+    lines[shaIndex] = `sha512: ${sha512}`
+  }
+  fs.writeFileSync(manifestPath, lines.join(eol))
+}
+
+async function main()
+{
+  if (process.platform !== 'linux') throw new Error('AppImage repacking only runs on Linux')
+  requireTool('unsquashfs')
+
+  const distDir = path.resolve(process.argv[2] ?? path.join(ROOT, 'dist'))
+  const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8'))
+  const candidates = fs.readdirSync(distDir).filter(file => file.endsWith('.AppImage'))
+  if (candidates.length !== 1)
+  {
+    throw new Error(`Expected exactly one .AppImage in ${distDir}, found ${candidates.length}`)
+  }
+  const manifest = path.join(distDir, 'latest-linux.yml')
+  if (!fs.existsSync(manifest)) throw new Error(`Missing ${manifest}`)
+  // electron-builder may write the local file under one name while listing a
+  // sanitized one in the manifest. The published name is the one the .zsync
+  // file and the update information must use.
+  const localName = candidates[0]
+  const name = manifestAppImageName(fs.readFileSync(manifest, 'utf8'))
+  const original = path.join(distDir, localName)
+  const published = path.join(distDir, name)
+  const updateInfo = process.env.APPIMAGE_UPDATE_INFO || defaultUpdateInfo(name, pkg.version)
+  log(`update information: ${updateInfo}`)
+
+  const work = fs.mkdtempSync(path.join(os.tmpdir(), 'appimage-repack-'))
+  try
+  {
+    const tool = path.join(work, 'appimagetool')
+    const runtime = path.join(work, 'runtime-x86_64')
+    log(`downloading ${APPIMAGETOOL.url}`)
+    await downloadPinned(APPIMAGETOOL, tool)
+    fs.chmodSync(tool, 0o755)
+    log(`downloading ${RUNTIME.url}`)
+    await downloadPinned(RUNTIME, runtime)
+
+    log(`extracting ${localName}`)
+    fs.chmodSync(original, 0o755)
+    const appDir = path.join(work, 'squashfs-root')
+    run('unsquashfs', ['-no-xattrs', '-no-progress', '-d', appDir, '-o', payloadOffset(original), original])
+    if (!fs.existsSync(path.join(appDir, 'AppRun'))) throw new Error('extracted AppDir has no AppRun')
+    if (!fs.existsSync(path.join(appDir, DESKTOP_FILE))) throw new Error(`extracted AppDir has no ${DESKTOP_FILE}`)
+
+    const metaDir = path.join(appDir, 'usr', 'share', 'metainfo')
+    fs.mkdirSync(metaDir, { recursive: true })
+    const template = fs.readFileSync(path.join(ROOT, 'build', 'linux', APPSTREAM_FILE), 'utf8')
+    const today = new Date().toISOString().slice(0, 10)
+    fs.writeFileSync(
+      path.join(metaDir, APPSTREAM_FILE),
+      template.replaceAll('@VERSION@', pkg.version).replaceAll('@DATE@', today),
+    )
+    log(`normalized permissions on ${normalizeTree(appDir)} entries`)
+
+    const output = path.join(work, name)
+    log('building the AppImage with the static runtime')
+    run(tool, ['--appimage-extract-and-run', '--no-appstream', '--runtime-file', runtime, '--comp', 'zstd', '-u', updateInfo, appDir, output], {
+      cwd: work,
+      env: { ...process.env, ARCH: 'x86_64' },
+    })
+    const zsync = `${output}.zsync`
+    if (!fs.existsSync(zsync)) throw new Error('appimagetool did not produce a .zsync file')
+
+    fs.chmodSync(output, 0o755)
+    const embedded = run(output, ['--appimage-updateinformation']).trim()
+    if (embedded !== updateInfo) throw new Error(`embedded update information mismatch: "${embedded}"`)
+    verifyImage(output)
+    log('permission check passed')
+
+    fs.copyFileSync(output, published)
+    fs.copyFileSync(zsync, `${published}.zsync`)
+    if (original !== published) fs.unlinkSync(original)
+    const sha512 = await sha512Base64(published)
+    const size = fs.statSync(published).size
+    patchManifest(manifest, name, sha512, size)
+    log(`wrote ${name} (${size} bytes) and ${name}.zsync`)
+  }
+  finally
+  {
+    fs.rmSync(work, { recursive: true, force: true })
+  }
+}
+
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url))
+{
+  main().catch(error =>
+  {
+    console.error(`[repack] ${error.message}`)
+    process.exit(1)
+  })
+}

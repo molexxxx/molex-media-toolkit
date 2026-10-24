@@ -52,6 +52,9 @@ dmg:
 linux:
   icon: build/icon.png
   target:
+    - target: AppImage
+      arch:
+        - x64
     - target: deb
       arch:
         - x64
@@ -61,3 +64,5 @@ linux:
   maintainer: molex
   category: AudioVideo
   artifactName: molexMedia-${version}-Linux-Installer.${ext}
+appImage:
+  artifactName: molexMedia-${version}-x86_64.${ext}

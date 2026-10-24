@@ -54,13 +54,14 @@ jobs:
           YOUTUBE_DL_SKIP_DOWNLOAD: '1'
 
       # The runner image's packages.microsoft.com source is not needed here, and
-      # when it fails, apt-get update fails the build with it.
-      - name: Install rpm tooling
+      # when it fails, apt-get update fails the build with it. squashfs-tools
+      # unpacks the AppImage for the repack below.
+      - name: Install rpm and squashfs tooling
         if: matrix.os == 'ubuntu-latest'
         run: |
           sudo find /etc/apt/sources.list.d -type f -exec grep -q 'packages\.microsoft\.com' {} \; -delete
           sudo apt-get update
-          sudo apt-get install -y rpm
+          sudo apt-get install -y rpm squashfs-tools
 
       # macOS, signed + notarized: runs only when the Apple Developer ID cert
       # and notarization secrets are configured.
@@ -92,12 +93,18 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Repack AppImage
+        if: matrix.os == 'ubuntu-latest'
+        run: node scripts/repack-appimage.mjs dist
+
       - name: Upload Artifacts
         uses: actions/upload-artifact@v7
         with:
           name: build-${{ matrix.os }}
           path: |
             dist/*.exe
+            dist/*.AppImage
+            dist/*.AppImage.zsync
             dist/*.dmg
             dist/*.zip
             dist/*.deb
