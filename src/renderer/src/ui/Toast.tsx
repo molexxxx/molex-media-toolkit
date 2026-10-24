@@ -51,6 +51,8 @@ export interface ToastOptions
   key?: string
   /** `polite` by default. */
   announce?: ToastAnnounce
+  /** Stays until it is acted on or dismissed, for a decision that waits on the reader, such as a ready update. */
+  persist?: boolean
 }
 
 /** The parts of a shown toast that {@link ToastApi.update} changes in place. */
@@ -240,12 +242,12 @@ export function clearToasts(): void
 }
 
 /**
- * How long a toast stays, or null when it persists until dismissed: errors persist; warnings and toasts with
- * actions, such as Undo, which Ctrl+Z also reaches, stay for the longer warning time.
+ * How long a toast stays, or null when it persists until dismissed: errors and toasts marked `persist` persist;
+ * warnings and toasts with actions, such as Undo, which Ctrl+Z also reaches, stay for the longer warning time.
  */
-export function toastLifetime(toast: Pick<ToastOptions, 'tone' | 'actions'>): number | null
+export function toastLifetime(toast: Pick<ToastOptions, 'tone' | 'actions' | 'persist'>): number | null
 {
-  if (toast.tone === 'error')
+  if (toast.tone === 'error' || toast.persist === true)
   {
     return null
   }

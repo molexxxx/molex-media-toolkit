@@ -430,7 +430,8 @@ app.whenReady().then(async () => {
       guard.confirmed = true
       await runShutdown()
       setQuitting(true)
-    }
+    },
+    showWindow: () => showMainWindow()
   })
 
   // The typings omit the event the docs describe; preventDefault on it delays the system shutdown

@@ -122,14 +122,17 @@ describe('the words', () =>
     expect(interfaceSizeOptions(Number.NaN)).toHaveLength(7)
   })
 
-  it('reports each update status in plain words, and nothing while idle, checking, or downloading', () =>
+  it('reports each update status in plain words, and nothing while idle or checking', () =>
   {
     expect(updateLine('up-to-date', '2.3.1')).toBe(APPLICATION_WORDS.latest)
     expect(updateLine('available', '2.4.0')).toBe('molexMedia 2.4.0 is available.')
     expect(updateLine('available', null)).toBe(APPLICATION_WORDS.available)
-    expect(updateLine('downloaded', '2.4.0')).toBe(APPLICATION_WORDS.ready)
+    expect(updateLine('downloaded', '2.4.0')).toBe('molexMedia 2.4.0 is ready. It installs when you restart or quit.')
+    expect(updateLine('downloaded', null)).toBe(APPLICATION_WORDS.ready)
     expect(updateLine('manual', null)).toBe(APPLICATION_WORDS.manual)
-    for (const status of ['idle', 'checking', 'downloading', 'error'] as const)
+    expect(updateLine('downloading', '2.4.0')).toBe('Downloading molexMedia 2.4.0 in the background.')
+    expect(updateLine('downloading', null)).toBe(APPLICATION_WORDS.downloadingLine)
+    for (const status of ['idle', 'checking', 'error'] as const)
     {
       expect(updateLine(status, '2.4.0')).toBeNull()
     }
@@ -231,20 +234,21 @@ describe('Updates', () =>
     await waitFor(() => expect(api.downloadUpdate).toHaveBeenCalledTimes(1))
   })
 
-  it('shows the download as a progress bar, then Install and restart, and the message of an install held back', async () =>
+  it('shows the download as a progress bar, then Restart to install, and the message of an install held back', async () =>
   {
     renderTab()
     setUpdate({ updateStatus: 'downloading', updateVersion: '2.4.0', updateDownloadPercent: 40 })
     expect(screen.getByRole('progressbar', { name: 'Downloading molexMedia 2.4.0' })).toHaveAttribute('aria-valuenow', '40')
-    expect(screen.getByRole('button', { name: APPLICATION_WORDS.downloading })).toHaveAttribute('aria-busy', 'true')
+    expect(within(region('Updates')).getByText('Downloading molexMedia 2.4.0 in the background.')).toBeInTheDocument()
+    expect(within(region('Updates')).queryByRole('button', { name: /download|check/i })).toBeNull()
 
     setUpdate({ updateStatus: 'downloaded', updateVersion: '2.4.0' })
     expect(screen.queryByRole('progressbar')).toBeNull()
-    expect(within(region('Updates')).getByText(APPLICATION_WORDS.ready)).toBeInTheDocument()
-    api.installUpdate.mockResolvedValueOnce({ ok: false, reason: 'batch-running', message: 'An update is ready. It installs when the current jobs finish.', whenIdle: false })
+    expect(within(region('Updates')).getByText('molexMedia 2.4.0 is ready. It installs when you restart or quit.')).toBeInTheDocument()
+    api.installUpdate.mockResolvedValueOnce({ ok: false, reason: 'batch-running', message: 'An update is ready. It installs when the current jobs finish.', whenIdle: true })
     fireEvent.click(screen.getByRole('button', { name: APPLICATION_WORDS.install }))
     expect(await within(region('Updates')).findByText('An update is ready. It installs when the current jobs finish.')).toBeInTheDocument()
-    expect(api.installUpdate).toHaveBeenCalledTimes(1)
+    expect(api.installUpdate).toHaveBeenCalledWith({ whenIdle: true })
   })
 
   it('names a download that did not finish', async () =>

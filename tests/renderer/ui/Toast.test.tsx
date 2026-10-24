@@ -706,5 +706,6 @@ describe('toastLifetime', () =>
     expect(toastLifetime({ tone: 'info', actions: [] })).toBe(TOAST_INFO_MS)
     expect(toastLifetime({ tone: 'success' })).toBe(TOAST_INFO_MS)
     expect(toastLifetime({ tone: 'warning' })).toBe(TOAST_WARNING_MS)
+    expect(toastLifetime({ tone: 'info', actions: [action], persist: true })).toBeNull()
   })
 })

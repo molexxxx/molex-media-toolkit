@@ -30,6 +30,7 @@ import { MediaEditor } from './components/editor'
 import { MediaPlayer } from './components/player'
 import { SetupWizard } from './components/setup'
 import { StartupCheck } from './components/setup/StartupCheck'
+import { useUpdateToast } from './components/layout/useUpdateToast'
 import { ToastRegion, toast, type ToastOptions } from './ui'
 import { focusNextRegion } from './hooks/useF6Region'
 import { listenUnclaimedKeys, useAppZoomKeys } from './hooks/useAppZoomKeys'
@@ -148,6 +149,7 @@ function App(): React.JSX.Element {
   useAppZoomKeys()
 
   const isPopout = window.location.hash === '#popout'
+  useUpdateToast(!isPopout)
 
   const { currentView, showSetup, ffmpegChecking, goBack } = useAppStore()
   const fullscreen = useAppStore((s) => s.fullscreen)

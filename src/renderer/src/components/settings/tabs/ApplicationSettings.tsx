@@ -15,17 +15,18 @@ import { YtDlpSettings } from './YtDlpSettings'
 /** The words of the Application section. */
 export const APPLICATION_WORDS = {
   updates: 'Updates',
-  updatesLead: 'molexMedia looks for new versions on GitHub Releases. Nothing downloads or installs until you choose to.',
-  autoLabel: 'Check for updates when molexMedia starts',
-  autoHint: 'Looks once, a few seconds after launch. A version you can download shows in the sidebar.',
+  updatesLead: 'molexMedia checks GitHub Releases for new versions, downloads them in the background, and installs them when you restart or quit.',
+  autoLabel: 'Keep molexMedia up to date automatically',
+  autoHint: 'Checks a few seconds after launch and every 30 minutes. When a new version has downloaded, a notice offers to restart and install it; otherwise it installs the next time you quit.',
   check: 'Check for updates',
   checking: 'Checking',
   downloading: 'Downloading',
-  install: 'Install and restart',
+  downloadingLine: 'Downloading the update in the background.',
+  install: 'Restart to install',
   latest: 'You have the latest version.',
   available: 'A new version is available.',
-  ready: 'Update ready. Installing restarts molexMedia.',
-  manual: 'This copy is updated by your package manager, or with the latest .deb or .rpm from GitHub Releases.',
+  ready: 'The update is ready. It installs when you restart or quit.',
+  manual: 'This copy is updated by your package manager, or with the latest .deb or .rpm from GitHub Releases. The AppImage updates itself.',
   checkFailed: 'The update check did not finish.',
   downloadFailed: 'The download did not finish.',
   window: 'Window',
@@ -99,8 +100,10 @@ export function updateLine(status: UpdateStatus, version: string | null): string
       return APPLICATION_WORDS.latest
     case 'available':
       return version === null ? APPLICATION_WORDS.available : `molexMedia ${version} is available.`
+    case 'downloading':
+      return version === null ? APPLICATION_WORDS.downloadingLine : `Downloading molexMedia ${version} in the background.`
     case 'downloaded':
-      return APPLICATION_WORDS.ready
+      return version === null ? APPLICATION_WORDS.ready : `molexMedia ${version} is ready. It installs when you restart or quit.`
     case 'manual':
       return APPLICATION_WORDS.manual
     default:
@@ -187,20 +190,24 @@ function UpdatesSection({ config, onUpdate }: { config: AppConfig; onUpdate: Upd
 
   async function installNow(): Promise<void>
   {
-    setRefusal(installRefusal(await window.api.installUpdate()))
+    setRefusal(installRefusal(await window.api.installUpdate({ whenIdle: true })))
   }
 
   const line = refusal ?? updateLine(updateStatus, updateVersion)
   const error = updateStatus === 'error' ? updateError ?? APPLICATION_WORDS.checkFailed : undefined
-  let action: ReactElement
+  let action: ReactElement | null
   if (updateStatus === 'downloaded')
   {
-    action = <Button variant="primary" icon="action.export" onClick={() => void installNow()}>{APPLICATION_WORDS.install}</Button>
+    action = <Button variant="primary" icon="action.retry" onClick={() => void installNow()}>{APPLICATION_WORDS.install}</Button>
   }
-  else if (updateStatus === 'available' || updateStatus === 'downloading')
+  else if (updateStatus === 'downloading')
+  {
+    action = null
+  }
+  else if (updateStatus === 'available')
   {
     action = (
-      <Button variant="primary" icon="action.export" loading={updateStatus === 'downloading'} loadingLabel={APPLICATION_WORDS.downloading} onClick={() => void downloadNow()}>
+      <Button variant="primary" icon="action.export" onClick={() => void downloadNow()}>
         {updateVersion === null ? 'Download' : `Download ${updateVersion}`}
       </Button>
     )

@@ -197,7 +197,7 @@ const api: WindowApi = {
   // Updater
   checkForUpdates: () => ipcRenderer.invoke('updater:check'),
   downloadUpdate: () => ipcRenderer.invoke('updater:download'),
-  installUpdate: () => ipcRenderer.invoke('updater:install'),
+  installUpdate: (request?: { whenIdle?: boolean }) => ipcRenderer.invoke('updater:install', request),
   getUpdaterStatus: () => ipcRenderer.invoke('updater:get-status'),
   onUpdaterStatus: (cb: (status: any) => void) => {
     const listener = (_: any, status: any) => cb(status)
