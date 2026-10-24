@@ -2,6 +2,30 @@
 
 All notable changes to the audio normalization tool are documented here.
 
+## [5.2.1] - 2026-10-24 - A clearer preset panel
+
+### Changed
+
+- **One block per preset.** In the Batch inspector, the preset under the
+  list is summed up in one place: the goal it serves, the standard it
+  meets with its loudness and true peak, what it does, and the technical
+  details folded at its foot. Levels the preset fixes are no longer
+  repeated in the Loudness fields, which keep only what you can change.
+- **The Normalize list is grouped by goal:** home, web, and media servers;
+  music and podcasts; broadcast delivery; and older guidelines. The
+  separate Choose by goal list and the links from one preset to another
+  are gone from the inspector.
+
+### Fixed
+
+- Emphasize dialog was offered for every source, though it only changes
+  sources with more than two channels; on a stereo file it changed nothing
+  but marked the preset edited. It now shows only for a surround source
+  that does not use it yet.
+- The Linux AppImage build now refuses a launcher that lacks the fallback
+  for systems that restrict user namespaces, such as Ubuntu 24.04, so a
+  build tool change cannot ship an AppImage that fails to start there.
+
 ## [5.2.0] - 2026-10-24 - Updates that install themselves, and a Linux AppImage
 
 ### Added
