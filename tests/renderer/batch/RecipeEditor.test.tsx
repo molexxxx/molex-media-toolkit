@@ -429,11 +429,21 @@ describe('normalize fields', () =>
     expect(request.assignments[0].recipe.shortForm.mode).toBe('off')
   })
 
-  it('shows a fixed target read-only with its reason', () =>
+  it('leaves the levels a preset fixes to the preset summary, which states them once', () =>
   {
     const { view } = renderTab([job(loudness('ebu-r128'))])
+    expect(view.container.querySelector('[data-field="target"]')).toBeNull()
+    expect(view.container.querySelector('[data-field="truePeak"]')).toBeNull()
+    const standard = view.container.querySelector('[data-preset-standard]') as HTMLElement
+    expect(standard.textContent).toContain('EBU R 128')
+    expect(standard.textContent).toContain('Set by EBU R 128. Choose Custom in the list to use your own levels.')
+  })
+
+  it('shows a fixed target read-only with its reason while no summary states it', () =>
+  {
+    const { view } = renderTab([job(loudness('ebu-r128')), job(loudness('atsc-a85'))])
     const target = view.container.querySelector('[data-field="target"]') as HTMLElement
-    expect(target.textContent).toContain('Fixed by EBU R 128. Choose Custom to set your own.')
+    expect(target.textContent).toContain('Choose Custom to set your own.')
   })
 })
 

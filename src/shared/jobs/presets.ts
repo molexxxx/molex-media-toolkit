@@ -220,7 +220,7 @@ export const MEDIA_CATALOGS =
 /** The groups of each operation's presets, in the order the picker and the preset select show them. */
 export const PRESET_GROUPS: Readonly<Record<Operation, readonly string[]>> =
 {
-  normalize: ['Standards', 'App presets', 'Custom'],
+  normalize: ['Home, web, and media servers', 'Music and podcasts', 'Broadcast delivery', 'Older guidelines', 'Custom'],
   boost: ['App presets', 'Custom'],
   convert: ['General', 'Web', 'Devices', 'Production', 'Audio only'],
   compress: ['Archive', 'Web', 'Mobile', 'Special', 'Modern'],
@@ -291,11 +291,24 @@ export interface PresetInfo
   user: boolean
 }
 
+/** The goal each loudness preset serves, which groups the Normalize preset list. */
+export const LOUDNESS_GOAL_GROUPS: Readonly<Record<string, string>> =
+{
+  'streaming-r128s2': 'Home, web, and media servers',
+  'night': 'Home, web, and media servers',
+  'spotify': 'Music and podcasts',
+  'apple-podcasts': 'Music and podcasts',
+  'ebu-r128': 'Broadcast delivery',
+  'atsc-a85': 'Broadcast delivery',
+  'film-r128s4': 'Broadcast delivery',
+  'aes-streaming': 'Older guidelines'
+}
+
 /** Every built-in preset of every operation, the loudness and gain presets included; Custom is not a preset to look up. */
 export const BUILTIN_PRESETS: readonly PresetInfo[] =
 [
   ...LOUDNESS_PRESETS.filter((entry) => entry.id !== 'custom')
-    .map((entry): PresetInfo => ({ id: entry.id, op: 'normalize', label: entry.label, group: entry.standard ? 'Standards' : 'App presets', user: false })),
+    .map((entry): PresetInfo => ({ id: entry.id, op: 'normalize', label: entry.label, group: LOUDNESS_GOAL_GROUPS[entry.id] ?? 'Older guidelines', user: false })),
   ...GAIN_PRESETS.map((entry): PresetInfo => ({ id: entry.id, op: 'boost', label: entry.label, group: 'App presets', user: false })),
   ...(['convert', 'compress', 'extract'] as const).flatMap((op) =>
     MEDIA_CATALOGS[op].map((entry): PresetInfo => ({ id: entry.id, op, label: entry.label, group: entry.group, user: false })))

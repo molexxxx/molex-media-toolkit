@@ -13,6 +13,7 @@ import
   editField,
   jobLock,
   lockReason,
+  presetField,
   recipeFields,
   splitSelection,
   type FieldPatch,
@@ -27,6 +28,7 @@ import { ConvertFields, type PatchHandler } from './fields/ConvertFields'
 import { ExtractFields } from './fields/ExtractFields'
 import { GainFields, type GainPrediction } from './fields/GainFields'
 import { DraftRegistryContext, NormalizeFields, type DraftRegistry } from './fields/NormalizeFields'
+import { presetSummarized } from './PresetSummary'
 
 /** What an assignRecipes call resolves to. */
 export type AssignOutcome = Awaited<ReturnType<BatchActions['assignRecipes']>>
@@ -251,7 +253,14 @@ export function RecipeEditor({ jobs, op, ctx, measurement = null }: RecipeEditor
   return (
     <DraftRegistryContext.Provider value={registry}>
       <div className='flex min-w-0 flex-col gap-6' data-recipe-editor={lock === null ? 'editable' : 'locked'}>
-        <OperationFields op={op} fields={fields} onPatch={onPatch} prediction={gainPrediction(jobs, measurement)} onMeasure={onMeasure} />
+        <OperationFields
+          op={op}
+          fields={fields}
+          onPatch={onPatch}
+          prediction={gainPrediction(jobs, measurement)}
+          onMeasure={onMeasure}
+          summarized={presetSummarized(presetField(jobs, op, ctx), op)}
+        />
       </div>
     </DraftRegistryContext.Provider>
   )
@@ -264,14 +273,16 @@ interface OperationFieldsProps
   onPatch: PatchHandler
   prediction: GainPrediction
   onMeasure?: () => void
+  /** Whether the preset summary above states the levels the preset fixes. */
+  summarized: boolean
 }
 
-function OperationFields({ op, fields, onPatch, prediction, onMeasure }: OperationFieldsProps): ReactElement
+function OperationFields({ op, fields, onPatch, prediction, onMeasure, summarized }: OperationFieldsProps): ReactElement
 {
   switch (op)
   {
     case 'normalize':
-      return <NormalizeFields fields={fields} onPatch={onPatch} />
+      return <NormalizeFields fields={fields} onPatch={onPatch} summarized={summarized} />
     case 'boost':
       return <GainFields fields={fields} onPatch={onPatch} prediction={prediction} onMeasure={onMeasure} />
     case 'convert':

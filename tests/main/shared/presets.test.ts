@@ -352,12 +352,16 @@ describe('pins and defaults', () =>
     expect(recipeLabel(custom, presetLookup())).toBe('Normalize · Custom')
   })
 
-  it('groups loudness presets as standards or not, gain presets as app presets', () =>
+  it('groups loudness presets by the goal they serve, gain presets as app presets', () =>
   {
-    expect(findPreset('ebu-r128')?.group).toBe('Standards')
-    expect(findPreset('night')?.group).toBe('App presets')
+    expect(findPreset('streaming-r128s2')?.group).toBe('Home, web, and media servers')
+    expect(findPreset('night')?.group).toBe('Home, web, and media servers')
+    expect(findPreset('spotify')?.group).toBe('Music and podcasts')
+    expect(findPreset('ebu-r128')?.group).toBe('Broadcast delivery')
+    expect(findPreset('film-r128s4')?.group).toBe('Broadcast delivery')
+    expect(findPreset('aes-streaming')?.group).toBe('Older guidelines')
     expect(findPreset('louder')?.group).toBe('App presets')
-    expect(PRESET_GROUPS.normalize).toEqual(['Standards', 'App presets', 'Custom'])
+    expect(PRESET_GROUPS.normalize).toEqual(['Home, web, and media servers', 'Music and podcasts', 'Broadcast delivery', 'Older guidelines', 'Custom'])
     expect(PRESET_GROUPS.boost).toEqual(['App presets', 'Custom'])
   })
 })

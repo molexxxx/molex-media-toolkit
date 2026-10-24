@@ -165,6 +165,36 @@ export function standardDetails(presetId: string, targetLufs: number | null = nu
   return { basis, facts, sources: preset.sources }
 }
 
+/** What a loudness preset meets and the levels it sets, for the preset summary. */
+export interface StandardSummary
+{
+  /** The standard, or what an app preset is built on: "EBU R 128 s4", "App preset built on EBU R 128 s2". */
+  name: string
+  /** The loudness it sets: "−23.0 LUFS program loudness", "−18 LUFS (s2 allows −20 to −16)". */
+  loudness: string
+  /** The peak ceiling: "At most −1.0 dBTP". */
+  peak: string
+  /** Whether the preset fixes the target, so Custom is the way to another level. */
+  fixed: boolean
+}
+
+/** The standard a loudness preset meets and its levels; null for Custom and for an id that names no loudness preset. */
+export function standardSummary(presetId: string, targetLufs: number | null = null): StandardSummary | null
+{
+  const preset = findLoudnessPreset(presetId)
+  const details = standardDetails(presetId, targetLufs)
+  if (preset === null || details === null || preset.id === 'custom')
+  {
+    return null
+  }
+  return {
+    name: details.basis,
+    loudness: loudnessDetail(preset, targetLufs ?? preset.target.integratedLufs, WORDING[preset.id] ?? {}),
+    peak: peakDetail(preset),
+    fixed: preset.targetRange === null
+  }
+}
+
 export interface StandardLineProps
 {
   /** The loudness preset the selected jobs share. */

@@ -37,9 +37,9 @@ import
   type SelectOption
 } from '../../../ui'
 import { useBatchActions } from '../BatchActionsContext'
-import { GOAL_WORDS, GoalFinder, PresetGuideText } from '../../presets/PresetGuide'
+import { presetGuide } from '../../../copy/presetGuides'
 import { PIN_KEYS, pinLabel, pinOf, SavePresetRow, type PinKey } from './SavePresetRow'
-import { StandardLine } from './StandardLine'
+import { PresetSummary } from './PresetSummary'
 
 /** The note an update or a delete of a preset carries: jobs hold frozen copies. */
 export const KEEP_RECIPES_NOTE = 'Jobs already in the queue keep their settings.'
@@ -145,6 +145,23 @@ function standardOf(members: readonly JobView[]): { presetId: string; targetLufs
   return { presetId, targetLufs: shared ? target : null }
 }
 
+/** Whether a source of the selected jobs has more than two channels, the only kind a downmix changes. */
+export function hasSurround(jobs: readonly JobView[]): boolean
+{
+  return jobs.some((job) => (job.media?.audio ?? []).some((stream) => stream.channels > 2))
+}
+
+/** Whether the preset's related setting is worth offering: the sources it needs are selected and it would change a job. */
+export function tipApplies(jobs: readonly JobView[], op: Operation, presetId: string, ctx: RecipeContext): boolean
+{
+  const tip = presetGuide(op, presetId)?.tip
+  if (tip?.action === undefined || (tip.needs === 'surround' && !hasSurround(jobs)))
+  {
+    return false
+  }
+  return editField(jobs, tip.action.patch, ctx).assignments.length > 0
+}
+
 /** Whether Save as preset shows, and why it is unavailable: it offers a recipe that is edited, custom, or of a deleted preset. */
 export function saveState(field: PresetField, shared: Recipe | null, users: readonly UserPreset[]): { shown: boolean; reason: string | null }
 {
@@ -189,8 +206,6 @@ export function PresetSelect({ jobs, op, ctx, className }: PresetSelectProps): R
   const [row, setRow] = useState<Row | null>(null)
   const [opener, setOpener] = useState<Opener>('button')
   const [focusBack, setFocusBack] = useState<Opener | null>(null)
-  const [goalsOpen, setGoalsOpen] = useState(false)
-  const goalsId = `${base}-goals`
 
   useEffect(() =>
   {
@@ -262,13 +277,6 @@ export function PresetSelect({ jobs, op, ctx, className }: PresetSelectProps): R
     }
     setStatus(null)
     await actions.assignRecipes(edit.assignments, { field: label })
-  }
-
-  function chooseGoal(presetId: string): void
-  {
-    setGoalsOpen(false)
-    document.getElementById(`${goalsId}-toggle`)?.focus()
-    void choose(presetId)
   }
 
   async function reset(): Promise<void>
@@ -441,33 +449,14 @@ export function PresetSelect({ jobs, op, ctx, className }: PresetSelectProps): R
         )}
       </div>
       {!field.mixed && (
-        <PresetGuideText
+        <PresetSummary
           op={op}
           presetId={field.value}
-          onUsePreset={field.disabled ? undefined : (id) => void choose(id)}
+          targetLufs={standard?.targetLufs ?? null}
+          tipApplies={!field.disabled && tipApplies(jobs, op, field.value, ctx)}
           onTip={field.disabled ? undefined : (patch, label) => void applyTip(patch, label)}
         />
       )}
-      {!field.disabled && (
-        <div className='flex flex-col items-start gap-1'>
-          <Button
-            id={`${goalsId}-toggle`}
-            variant='ghost'
-            size='sm'
-            icon={goalsOpen ? 'action.collapse' : 'action.expand'}
-            aria-expanded={goalsOpen}
-            aria-controls={goalsId}
-            onClick={() => setGoalsOpen(!goalsOpen)}
-            className='-ms-2'
-          >
-            {GOAL_WORDS.heading}
-          </Button>
-          <div id={goalsId} hidden={!goalsOpen} className='w-full'>
-            {goalsOpen && <GoalFinder op={op} current={field.mixed ? null : field.value} onChoose={chooseGoal} className='-mx-2' />}
-          </div>
-        </div>
-      )}
-      {standard !== null && <StandardLine presetId={standard.presetId} targetLufs={standard.targetLufs} />}
       {row === 'save' && (
         <SavePresetRow
           key='save'

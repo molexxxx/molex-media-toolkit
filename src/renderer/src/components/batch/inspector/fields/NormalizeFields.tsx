@@ -408,8 +408,21 @@ export function GroupedFields({ fields, onPatch, groups, scope, more, after = {}
   )
 }
 
-/** The Normalize fields of the Recipe tab: loudness, channels, output, and album, with cinematic content behind "More settings". */
-export function NormalizeFields({ fields, onPatch }: VideoFieldsProps): ReactElement
+/** The levels the preset summary states when the preset fixes them, so the Loudness group keeps only what can change. */
+export const SUMMARIZED_LEVELS: ReadonlySet<FieldKey> = new Set<FieldKey>(['target', 'truePeak'])
+
+/** The fields left to draw once the preset summary states the fixed levels. */
+export function withoutSummarizedLevels(fields: readonly FieldState[]): FieldState[]
 {
-  return <GroupedFields fields={fields} onPatch={onPatch} groups={NORMALIZE_GROUPS} scope='normalize' more={NORMALIZE_MORE} />
+  return fields.filter((field) => !(SUMMARIZED_LEVELS.has(field.key) && field.fixed === true && !field.mixed && field.error === null))
+}
+
+/**
+ * The Normalize fields of the Recipe tab: loudness, channels, output, and album, with cinematic content behind "More
+ * settings". While the preset summary states the levels the preset fixes, those fields are left out.
+ */
+export function NormalizeFields({ fields, onPatch, summarized = false }: VideoFieldsProps & { summarized?: boolean }): ReactElement
+{
+  const shown = summarized ? withoutSummarizedLevels(fields) : fields
+  return <GroupedFields fields={shown} onPatch={onPatch} groups={NORMALIZE_GROUPS} scope='normalize' more={NORMALIZE_MORE} />
 }

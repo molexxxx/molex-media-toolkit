@@ -16,7 +16,6 @@ import { TestBatchActionsProvider } from '../../../src/renderer/src/components/b
 import type { BatchActions } from '../../../src/renderer/src/stores/batchActions'
 import { toast } from '../../../src/renderer/src/ui'
 import { FACT_TERMS, STANDARD_TOGGLE, StandardLine, standardDetails } from '../../../src/renderer/src/components/batch/inspector/StandardLine'
-import { GOAL_WORDS } from '../../../src/renderer/src/components/presets/PresetGuide'
 import
 {
   appliedNote,
@@ -248,12 +247,12 @@ describe('standardDetails', () =>
 
 describe('PresetSelect', () =>
 {
-  it('groups Normalize choices as Pinned, Recently used, Standards, App presets, Custom, and Your presets', () =>
+  it('groups Normalize choices by goal, after Pinned and Recently used and before Your presets', () =>
   {
     const late = userPreset('user-late', 'Late podcasts', edited('streaming-r128s2', -17))
     const context = ctx({ presets: presets({ user: [late], recent: [loudness('spotify'), edited('streaming-r128s2', -19)] }) })
     renderSelect([job(loudness('ebu-r128'))], context)
-    expect(groups()).toEqual(['Pinned', 'Recently used', 'Standards', 'App presets', 'Custom', 'Your presets'])
+    expect(groups()).toEqual(['Pinned', 'Recently used', 'Home, web, and media servers', 'Music and podcasts', 'Broadcast delivery', 'Older guidelines', 'Custom', 'Your presets'])
     expect(select().value).toBe('ebu-r128')
     const pinned = select().querySelector('optgroup[label="Pinned"]') as HTMLElement
     expect(pinned.textContent).toContain(`EBU R 128 (${M}23 LUFS) \u00b7 Alt+1`)
@@ -292,21 +291,40 @@ describe('PresetSelect', () =>
     expect(document.body.textContent).toContain(`${M}17.0 LUFS (s2 allows`)
   })
 
-  it('guides the shared built-in preset in plain words, and a pointer applies the better preset', async () =>
+  it('sums up the shared preset in one block: its goal, the standard with its levels, and what it does', () =>
   {
-    const actions = renderSelect([job(loudness('film-r128s4'))], ctx())
-    const guide = document.querySelector('[data-preset-guide="film-r128s4"]') as HTMLElement
-    expect(guide).toHaveTextContent('Delivering a finished film or series')
-    await act(async () =>
-    {
-      fireEvent.click(within(guide).getByRole('button', { name: 'Use Clear dialogue (movies and shows)' }))
-    })
-    expect(actions.assignRecipes.mock.calls[0][0][0].recipe.presetId).toBe('night')
+    renderSelect([job(loudness('film-r128s4'))], ctx())
+    const summary = document.querySelector('[data-preset-summary="film-r128s4"]') as HTMLElement
+    expect(summary).toHaveTextContent('Delivering a finished film or series')
+    const standard = summary.querySelector('[data-preset-standard]') as HTMLElement
+    expect(standard).toHaveTextContent('EBU R 128 s4')
+    expect(standard).toHaveTextContent(`Loudness${M}23.0 LUFS program loudness`)
+    expect(standard).toHaveTextContent(`True peakAt most ${M}1.0 dBTP`)
+    expect(standard).toHaveTextContent('Set by EBU R 128 s4. Choose Custom in the list to use your own levels.')
+    expect(summary).toHaveTextContent('Sets the whole mix to the broadcast level')
+    expect(within(summary).getByRole('button', { name: 'Technical details' })).toHaveAttribute('aria-expanded', 'false')
+    expect(within(summary).queryByRole('button', { name: /^Use / })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Choose by goal' })).toBeNull()
   })
 
-  it('applies a tip setting to the selected jobs under its field name', async () =>
+  it('names what an app preset is built on, and the range a preset lets the target move in', () =>
   {
-    const actions = renderSelect([job(loudness('night'))], ctx())
+    renderSelect([job(loudness('night'))], ctx())
+    expect(document.querySelector('[data-preset-standard]')).toHaveTextContent('App preset built on EBU R 128 s2')
+    cleanup()
+    renderSelect([job(loudness('streaming-r128s2'))], ctx())
+    const standard = document.querySelector('[data-preset-standard]') as HTMLElement
+    expect(standard).toHaveTextContent(`(s2 allows ${M}20 to ${M}16)`)
+    expect(standard).not.toHaveTextContent('Choose Custom')
+  })
+
+  it('offers dialog emphasis only for a surround source, applies it under its field name, then stops offering it', async () =>
+  {
+    renderSelect([job(loudness('night'))], ctx())
+    expect(screen.queryByRole('button', { name: 'Emphasize dialog' })).toBeNull()
+    cleanup()
+    const surround = { audio: [{ codec: 'eac3', channels: 6, layout: '5.1', sampleRate: 48000, bitsPerSample: null, bitrateKbps: 640, language: null, isDefault: true }], video: [], subtitles: [], durationSec: 600 } as unknown as JobView['media']
+    const actions = renderSelect([job(loudness('night'), { media: surround })], ctx())
     await act(async () =>
     {
       fireEvent.click(screen.getByRole('button', { name: 'Emphasize dialog' }))
@@ -314,33 +332,20 @@ describe('PresetSelect', () =>
     const [assignments, options] = actions.assignRecipes.mock.calls[0]
     expect(assignments[0].recipe.downmix).toBe('dialog')
     expect(options).toEqual({ field: 'Downmix' })
-  })
-
-  it('chooses a preset by goal, closes the goals, and marks the goal in use', async () =>
-  {
-    const actions = renderSelect([job(loudness('ebu-r128'))], ctx())
-    const toggle = screen.getByRole('button', { name: GOAL_WORDS.heading })
-    fireEvent.click(toggle)
-    const goals = screen.getByRole('list', { name: 'Normalize goals' })
-    expect(within(goals).getByRole('button', { name: /European broadcaster/ })).toHaveAttribute('aria-current', 'true')
-    await act(async () =>
-    {
-      fireEvent.click(within(goals).getByRole('button', { name: /Dialogue too quiet/ }))
-    })
-    expect(actions.assignRecipes.mock.calls[0][0][0].recipe.presetId).toBe('night')
-    expect(toggle).toHaveAttribute('aria-expanded', 'false')
-    expect(document.activeElement).toBe(toggle)
-  })
-
-  it('shows the guide without actions or goals while the selection is locked, and none for mixed presets', () =>
-  {
-    renderSelect([job(loudness('night'), { state: 'queued', runId: 4 as JobView['runId'] })], ctx())
-    expect(document.querySelector('[data-preset-guide="night"]')).not.toBeNull()
+    cleanup()
+    renderSelect([job({ ...loudness('night'), downmix: 'dialog' } as Recipe, { media: surround })], ctx())
     expect(screen.queryByRole('button', { name: 'Emphasize dialog' })).toBeNull()
-    expect(screen.queryByRole('button', { name: GOAL_WORDS.heading })).toBeNull()
+  })
+
+  it('shows the summary without actions while the selection is locked, and none for mixed presets', () =>
+  {
+    const surround = { audio: [{ codec: 'eac3', channels: 6, layout: '5.1', sampleRate: 48000, bitsPerSample: null, bitrateKbps: 640, language: null, isDefault: true }], video: [], subtitles: [], durationSec: 600 } as unknown as JobView['media']
+    renderSelect([job(loudness('night'), { state: 'queued', runId: 4 as JobView['runId'], media: surround })], ctx())
+    expect(document.querySelector('[data-preset-summary="night"]')).not.toBeNull()
+    expect(screen.queryByRole('button', { name: 'Emphasize dialog' })).toBeNull()
     cleanup()
     renderSelect([job(loudness('night')), job(loudness('ebu-r128'))], ctx())
-    expect(document.querySelector('[data-preset-guide]')).toBeNull()
+    expect(document.querySelector('[data-preset-summary]')).toBeNull()
   })
 
   it('applies a chosen preset with the applied toast', async () =>

@@ -4,7 +4,7 @@ import { cleanup, fireEvent, render, screen, within } from '@testing-library/rea
 import { BUILTIN_PRESETS, findPreset } from '../../../src/shared/jobs/presets'
 import { OPERATIONS } from '../../../src/shared/jobs/recipes'
 import { PRESET_GOALS, presetGuide } from '../../../src/renderer/src/copy/presetGuides'
-import { GoalFinder, PresetGuideText } from '../../../src/renderer/src/components/presets/PresetGuide'
+import { GoalFinder, PresetGuideText, PresetTipBlock } from '../../../src/renderer/src/components/presets/PresetGuide'
 
 afterEach(cleanup)
 
@@ -25,7 +25,7 @@ describe('preset guides', () =>
     expect(presetGuide('normalize', 'user-1')).toBeNull()
   })
 
-  it('point only at presets that exist, and offer goals that each name a preset of their operation', () =>
+  it('offer goals that each name a preset of their operation', () =>
   {
     for (const op of OPERATIONS)
     {
@@ -35,26 +35,15 @@ describe('preset guides', () =>
         expect(findPreset(goal.presetId)?.op, goal.goal).toBe(op)
       }
     }
-    for (const preset of BUILTIN_PRESETS)
-    {
-      const pointer = presetGuide(preset.op, preset.id)?.instead
-      if (pointer !== undefined)
-      {
-        expect(findPreset(pointer.presetId), preset.id).not.toBeNull()
-        expect(pointer.presetId).not.toBe(preset.id)
-      }
-    }
   })
 
-  it('send home movies to Streaming and quiet dialogue to Clear dialogue, with dialog emphasis for 5.1', () =>
+  it('send home movies to Streaming and quiet dialogue to Clear dialogue, with dialog emphasis for surround sources only', () =>
   {
     expect(PRESET_GOALS.normalize.slice(0, 2)).toEqual([
       { goal: 'Movies and shows for home playback or a media server', presetId: 'streaming-r128s2' },
       { goal: 'Dialogue too quiet, action too loud', presetId: 'night' }
     ])
-    expect(presetGuide('normalize', 'streaming-r128s2')?.instead?.presetId).toBe('night')
-    expect(presetGuide('normalize', 'night')?.tip?.action?.patch).toEqual({ field: 'downmix', value: 'dialog' })
-    expect(presetGuide('normalize', 'film-r128s4')?.instead?.presetId).toBe('night')
+    expect(presetGuide('normalize', 'night')?.tip).toMatchObject({ action: { patch: { field: 'downmix', value: 'dialog' } }, needs: 'surround' })
   })
 
   it('use American spelling and no em dashes', () =>
@@ -67,34 +56,23 @@ describe('preset guides', () =>
 
 describe('PresetGuideText', () =>
 {
-  it('renders the use, how it works, a pointer as text, and a tip without an action when nothing applies them', () =>
+  it('renders the use, how it works, and a tip as text, with no pointer to another preset', () =>
   {
     render(<PresetGuideText op="normalize" presetId="night" className="extra" />)
     const guide = document.querySelector('[data-preset-guide="night"]') as HTMLElement
     expect(guide).toHaveClass('extra')
     expect(guide).toHaveTextContent('Movies and shows where dialogue is too quiet')
-    expect(guide).toHaveTextContent('Film and series (EBU R 128 s4)')
-    expect(within(guide).queryByRole('button')).toBeNull()
     expect(guide).toHaveTextContent('center channel')
+    expect(guide).not.toHaveTextContent('Film and series (EBU R 128 s4)')
+    expect(within(guide).queryByRole('button')).toBeNull()
   })
 
-  it('applies a same-operation pointer and a tip through their handlers', () =>
+  it('applies a tip through its handler', () =>
   {
-    const use = vi.fn()
     const tip = vi.fn()
-    render(<PresetGuideText op="normalize" presetId="night" onUsePreset={use} onTip={tip} />)
-    fireEvent.click(screen.getByRole('button', { name: 'Use Film and series (EBU R 128 s4)' }))
-    expect(use).toHaveBeenCalledWith('film-r128s4')
+    render(<PresetTipBlock tip={presetGuide('normalize', 'night')!.tip!} onTip={tip} />)
     fireEvent.click(screen.getByRole('button', { name: 'Emphasize dialog' }))
     expect(tip).toHaveBeenCalledWith({ field: 'downmix', value: 'dialog' }, 'Downmix')
-  })
-
-  it('names a pointer of another operation with that operation, never as a button', () =>
-  {
-    render(<PresetGuideText op="boost" presetId="louder" onUsePreset={vi.fn()} />)
-    const guide = document.querySelector('[data-preset-guide="louder"]') as HTMLElement
-    expect(guide).toHaveTextContent('Normalize: Streaming (EBU R 128 s2)')
-    expect(within(guide).queryByRole('button')).toBeNull()
   })
 
   it('renders nothing for a user preset', () =>

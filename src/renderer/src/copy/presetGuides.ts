@@ -1,19 +1,11 @@
 /**
  * @module copy/presetGuides
- * @description What each built-in preset is for, written at three depths: the use in plain words for anyone, how it
- * gets there for someone who knows the basics, and a pointer to a better preset or a related setting where one
- * applies. The exact values come from the preset data and the standard's own detail, never from this copy.
+ * @description What each built-in preset is for: the use in plain words for anyone, how it gets there for someone
+ * who knows the basics, and a related setting where one applies. The exact values come from the preset data and the
+ * standard's own detail, never from this copy.
  */
 import type { Operation } from '../../../shared/jobs/recipes'
 import type { FieldPatch } from '../stores/recipeFields'
-
-/** Another preset that fits a nearby case better. */
-export interface PresetPointer
-{
-  /** The case, as a short question or condition. */
-  when: string
-  presetId: string
-}
 
 /** A related setting worth changing with the preset, with the patch that changes it. */
 export interface PresetTip
@@ -21,6 +13,8 @@ export interface PresetTip
   text: string
   /** The button's label, the field it changes as the undo history names it, and the change. */
   action?: { label: string, field: string, patch: FieldPatch }
+  /** `surround`: offered only for a source with more than two channels, the only kind the change affects. */
+  needs?: 'surround'
 }
 
 /** One preset's guide. */
@@ -30,7 +24,6 @@ export interface PresetGuide
   bestFor: string
   /** What it changes and why that suits the use. */
   how: string
-  instead?: PresetPointer
   tip?: PresetTip
 }
 
@@ -46,14 +39,12 @@ const LOUDNESS: Readonly<Record<string, PresetGuide>> =
   'streaming-r128s2':
   {
     bestFor: 'A home movie library or media server, videos for the web, or evening out a folder of mixed clips.',
-    how: 'Brings every file to the same average loudness, the level EBU R 128 s2 recommends for streaming, so one film is not louder than the next. It holds peaks below the ceiling so they survive conversion to AAC or MP3. The mix inside each file stays as it is, so quiet dialogue stays quiet next to loud action.',
-    instead: { when: 'Dialogue too quiet next to the action?', presetId: 'night' }
+    how: 'Brings every file to the same average loudness, the level EBU R 128 s2 recommends for streaming, so one film is not louder than the next. It holds peaks below the ceiling so they survive conversion to AAC or MP3. The mix inside each file stays as it is, so quiet dialogue stays quiet next to loud action.'
   },
   'ebu-r128':
   {
     bestFor: 'Delivering to a European TV or radio broadcaster, or anyone who asks for EBU R 128.',
-    how: 'The broadcast level: quieter on average than online media, which leaves wide headroom for loud moments. Short items such as trailers and ads are also held to a maximum short-term loudness.',
-    instead: { when: 'Publishing online instead?', presetId: 'streaming-r128s2' }
+    how: 'The broadcast level: quieter on average than online media, which leaves wide headroom for loud moments. Short items such as trailers and ads are also held to a maximum short-term loudness.'
   },
   'atsc-a85':
   {
@@ -63,8 +54,7 @@ const LOUDNESS: Readonly<Record<string, PresetGuide>> =
   'film-r128s4':
   {
     bestFor: 'Delivering a finished film or series to a broadcaster or platform whose spec names EBU R 128 s4.',
-    how: 'Sets the whole mix to the broadcast level without changing its dynamics, so quiet dialogue stays quiet. For 5.1 sources it also reports how loud the center channel is next to the mix, the loudness-to-dialogue ratio the spec limits.',
-    instead: { when: 'Dialogue too quiet next to the action?', presetId: 'night' }
+    how: 'Sets the whole mix to the broadcast level without changing its dynamics, so quiet dialogue stays quiet. For 5.1 sources it also reports how loud the center channel is next to the mix, the loudness-to-dialogue ratio the spec limits.'
   },
   'apple-podcasts':
   {
@@ -79,18 +69,17 @@ const LOUDNESS: Readonly<Record<string, PresetGuide>> =
   'aes-streaming':
   {
     bestFor: 'Matching earlier work that followed the AES TD1004 streaming guideline from 2015.',
-    how: 'The same online level as EBU R 128 s2, with the older guideline\'s tolerance and short-form rule. AES has since replaced it, so the values are kept for comparison only.',
-    instead: { when: 'Starting something new?', presetId: 'streaming-r128s2' }
+    how: 'The same online level as EBU R 128 s2, with the older guideline\'s tolerance and short-form rule. AES has since replaced it, so the values are kept for comparison only.'
   },
   'night':
   {
     bestFor: 'Movies and shows where dialogue is too quiet and action or music is too loud.',
     how: 'Ends at the same level as Streaming (EBU R 128 s2), so it is no quieter, and first evens out the mix. A gentle 3:1 compressor turns down everything louder than the film\'s own average, so dialogue sits closer to the explosions and the score and you stop riding the volume. No loudness standard does this, because standards keep the mix as delivered.',
-    instead: { when: 'Delivering the film to a broadcaster?', presetId: 'film-r128s4' },
     tip:
     {
       text: 'For a 5.1 film you play on two speakers, also emphasize dialog: the center channel, where dialogue sits, stays at full level and the surrounds drop. The output becomes stereo, so skip this for a surround system.',
-      action: { label: 'Emphasize dialog', field: 'Downmix', patch: { field: 'downmix', value: 'dialog' } }
+      action: { label: 'Emphasize dialog', field: 'Downmix', patch: { field: 'downmix', value: 'dialog' } },
+      needs: 'surround'
     }
   },
   'custom':
@@ -125,8 +114,7 @@ const GAIN: Readonly<Record<string, PresetGuide>> =
   'louder':
   {
     bestFor: 'A file that is clearly too quiet.',
-    how: 'Raises the level by 6 dB. The limiter catches the peaks that would otherwise clip.',
-    instead: { when: 'Need many files at one exact level?', presetId: 'streaming-r128s2' }
+    how: 'Raises the level by 6 dB. The limiter catches the peaks that would otherwise clip.'
   },
   'tone-down':
   {

@@ -192,6 +192,8 @@ export interface FieldState<K extends FieldKey = FieldKey>
   disabled: boolean
   /** Why the field cannot be edited: the jobs are locked, or their preset fixes it. */
   reason: string | null
+  /** Whether the preset fixes the value, so the preset summary states it in place of an editable field. */
+  fixed?: boolean
   hint: string | null
   /** A current value outside the field's range, for the first job that holds one. */
   error: string | null
@@ -2226,6 +2228,7 @@ function buildField(entry: FieldDef, scope: BuildScope, parentBlocked: boolean):
     mixedText: mixed ? distinctText(distinct) : null,
     disabled,
     reason,
+    fixed: fixedBy.length > 0,
     hint: entry.hint?.(recipes, fieldScope) ?? null,
     error: recipes.map((recipe) => valueError(entry, entry.get(recipe), recipe)).find((error) => error !== null) ?? null,
     note: entry.note?.(recipes, fieldScope) ?? null,

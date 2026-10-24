@@ -1,74 +1,60 @@
 /**
  * @module components/presets/PresetGuide
  * @description A built-in preset's guidance, shared by the Batch inspector and Settings: the use in plain words, how
- * it gets there, a pointer to a better preset for a nearby case, and a related setting worth changing with it. The
- * goal finder lists common goals per operation, each answered by one preset.
+ * it gets there, and a related setting worth changing with it. The goal finder lists common goals per operation,
+ * each answered by one preset, for the Settings preset list.
  */
 import type { ReactElement } from 'react'
 import { operationLabel } from '../../../../shared/jobs/describe'
 import { findPreset } from '../../../../shared/jobs/presets'
 import type { Operation } from '../../../../shared/jobs/recipes'
-import { PRESET_GOALS, presetGuide } from '../../copy/presetGuides'
+import { PRESET_GOALS, presetGuide, type PresetTip } from '../../copy/presetGuides'
 import type { FieldPatch } from '../../stores/recipeFields'
 import { Button } from '../../ui/Button'
 import { cx } from '../../ui/cx'
 
-const INLINE_LINK = 'text-ink underline decoration-line-control underline-offset-2 transition-colors duration-fast ease-out hover:decoration-ink'
+/** Props for {@link PresetTipBlock}. */
+export interface PresetTipBlockProps
+{
+  tip: PresetTip
+  /** Applies the tip's setting; without it the tip shows as text. */
+  onTip?: (patch: FieldPatch, field: string) => void
+}
+
+/** A related setting worth changing with the preset, with the button that changes it. */
+export function PresetTipBlock({ tip, onTip }: PresetTipBlockProps): ReactElement
+{
+  return (
+    <div className='flex flex-col items-start gap-2'>
+      <p className='max-w-[68ch] text-label text-ink-2'>{tip.text}</p>
+      {tip.action !== undefined && onTip !== undefined && (
+        <Button size='sm' variant='secondary' onClick={() => onTip(tip.action!.patch, tip.action!.field)}>{tip.action.label}</Button>
+      )}
+    </div>
+  )
+}
 
 /** Props for {@link PresetGuideText}. */
 export interface PresetGuideTextProps
 {
   op: Operation
   presetId: string
-  /** Applies another preset of the same operation; without it a pointer names the preset as text. */
-  onUsePreset?: (presetId: string) => void
-  /** Applies a tip's setting to the selected jobs; without it the tip shows as text. */
-  onTip?: (patch: FieldPatch, field: string) => void
   className?: string
 }
 
-/** The pointer's preset name: a button that applies it when it shares the operation and `onUse` is given. */
-function PointerName({ op, presetId, onUse }: { op: Operation, presetId: string, onUse?: (presetId: string) => void }): ReactElement | null
-{
-  const target = findPreset(presetId)
-  if (target === null)
-  {
-    return null
-  }
-  if (target.op === op && onUse !== undefined)
-  {
-    return <button type="button" className={INLINE_LINK} onClick={() => onUse(target.id)}>{`Use ${target.label}`}</button>
-  }
-  return <span className="text-ink">{target.op === op ? target.label : `${operationLabel(target.op)}: ${target.label}`}</span>
-}
-
-/** A built-in preset's guidance, or nothing for a user preset. */
-export function PresetGuideText({ op, presetId, onUsePreset, onTip, className }: PresetGuideTextProps): ReactElement | null
+/** A built-in preset's guidance as text, or nothing for a user preset. */
+export function PresetGuideText({ op, presetId, className }: PresetGuideTextProps): ReactElement | null
 {
   const guide = presetGuide(op, presetId)
   if (guide === null)
   {
     return null
   }
-  const tip = guide.tip
   return (
     <div className={cx('flex min-w-0 flex-col gap-1.5', className)} data-preset-guide={presetId}>
-      <p className="text-body text-ink">{guide.bestFor}</p>
-      <p className="max-w-[68ch] text-label text-ink-2">{guide.how}</p>
-      {guide.instead !== undefined && (
-        <p className="text-label text-ink-3">
-          {guide.instead.when}{' '}
-          <PointerName op={op} presetId={guide.instead.presetId} onUse={onUsePreset} />
-        </p>
-      )}
-      {tip !== undefined && (
-        <div className="mt-1 flex flex-col items-start gap-2 rounded-sm bg-sunken px-3 py-2.5 shadow-well">
-          <p className="max-w-[68ch] text-label text-ink-2">{tip.text}</p>
-          {tip.action !== undefined && onTip !== undefined && (
-            <Button size="sm" variant="secondary" onClick={() => onTip(tip.action!.patch, tip.action!.field)}>{tip.action.label}</Button>
-          )}
-        </div>
-      )}
+      <p className='text-body text-ink'>{guide.bestFor}</p>
+      <p className='max-w-[68ch] text-label text-ink-2'>{guide.how}</p>
+      {guide.tip !== undefined && <PresetTipBlock tip={guide.tip} />}
     </div>
   )
 }
@@ -103,7 +89,7 @@ export function GoalFinder({ op, current, onChoose, layout = 'stacked', classNam
         return (
           <li key={goal.goal}>
             <button
-              type="button"
+              type='button'
               aria-current={active || undefined}
               onClick={() => onChoose(goal.presetId)}
               className={cx(
@@ -112,10 +98,10 @@ export function GoalFinder({ op, current, onChoose, layout = 'stacked', classNam
                 active && 'bg-wash-selected hover:bg-wash-selected-hover'
               )}
             >
-              <span className="text-body text-ink">{goal.goal}</span>
+              <span className='text-body text-ink'>{goal.goal}</span>
               <span className={cx('text-label', active ? 'text-accent-ink' : 'text-ink-2')}>
                 {preset?.label}
-                {active && <span className="sr-only">{`, ${GOAL_WORDS.inUse}`}</span>}
+                {active && <span className='sr-only'>{`, ${GOAL_WORDS.inUse}`}</span>}
               </span>
             </button>
           </li>
