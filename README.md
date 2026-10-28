@@ -10,6 +10,8 @@
 
 **A desktop toolkit for loudness, conversion, compression, extraction, editing, and playback, built on FFmpeg.**
 
+<a href="https://media.molex.cloud"><img src=".github/assets/website-button.svg" alt="Website: media.molex.cloud" height="36" /></a>
+
 <a href="https://github.com/molexxxx/molex-media-toolkit/actions/workflows/ci.yml"><img src="https://raw.githubusercontent.com/molexxxx/molexxxx/main/.github/badges/molex-media-ci-molex.svg?v=34c0c530" alt="CI" /></a>
 <a href="https://github.com/molexxxx/molex-media-toolkit/actions/workflows/build.yml"><img src="https://raw.githubusercontent.com/molexxxx/molexxxx/main/.github/badges/molex-media-build-molex.svg?v=7c9c6e65" alt="build" /></a>
 <a href="https://github.com/molexxxx/molex-media-toolkit/releases"><img src="https://raw.githubusercontent.com/molexxxx/molexxxx/main/.github/badges/molex-media-release-molex.svg?v=2055181c" alt="release" /></a>
@@ -18,7 +20,7 @@
 
 <br/>
 
-[Download](#install) · [Features](#features) · [FFmpeg and yt-dlp](#ffmpeg-and-yt-dlp) · [Development](#development) · [Changelog](CHANGELOG.md) · [Website](https://media.molex.cloud) · [Report a bug](https://github.com/molexxxx/molex-media-toolkit/issues/new?template=bug_report.yml) · [Request a feature](https://github.com/molexxxx/molex-media-toolkit/issues/new?template=feature_request.yml)
+[Download](#install) · [Features](#features) · [FFmpeg and yt-dlp](#ffmpeg-and-yt-dlp) · [Development](#development) · [Changelog](CHANGELOG.md) · [Report a bug](https://github.com/molexxxx/molex-media-toolkit/issues/new?template=bug_report.yml) · [Request a feature](https://github.com/molexxxx/molex-media-toolkit/issues/new?template=feature_request.yml)
 
 </div>
 
