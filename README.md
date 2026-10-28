@@ -26,7 +26,7 @@
 
 <br/>
 
-<img alt="The Dashboard after a batch: counts of waiting, active, done, and jobs that need attention; the FFmpeg build, GPU, CPU, memory, and platform in use; buttons that add files with Normalize, Gain, Convert, Compress, or Extract; and the recent jobs with their verified loudness and true-peak stamps." src=".github/assets/dashboard.png">
+<img alt="The Dashboard after a batch: counts of waiting, active, done, and jobs that need attention, beside the finished batch's summary; the FFmpeg build, GPU, CPU, memory, and platform in use; buttons that add files with Normalize, Gain, Convert, Compress, or Extract; and the recent jobs with their verified stamps." src=".github/assets/dashboard.png">
 
 ## What it does
 
@@ -38,7 +38,7 @@ molexMedia runs media jobs in batches on Windows, macOS, and Linux. You queue fi
 
 Every file in the queue is a job with its own settings: an operation (Normalize, Gain, Convert, Compress, or Extract) and a preset, snapshotted when the job is added, so a later change to the defaults never touches a queued job. The inspector shows the selected jobs' settings in plain words, with a goal finder that answers common goals, such as podcast episodes or delivering to a European broadcaster, with one preset.
 
-<img alt="Batch, Queue tab: eight queued jobs with their operation, status, size, duration, and source streams. The inspector on the right shows the selected job's Convert settings: the preset's description, the goal finder, container, video codec, and bit rate." src=".github/assets/sections/batch.png">
+<img alt="Batch, Queue tab: eight queued jobs with their operation, status, and size. The inspector on the right shows the selected job's Convert settings: the preset and its description, the container, and the video codec." src=".github/assets/sections/batch.png">
 
 - Loudness presets are named after the documents they follow: EBU R 128, EBU R 128 s2 for streaming and s4 for film and series, ATSC A/85, the AES streaming recommendation, Apple Podcasts, and Spotify, plus Clear dialogue and Custom. Each preset states its source and tolerance. Loudness is measured with ebur128, the gain is planned from the measurement, and a true-peak limiter holds the ceiling.
 - Convert, Compress, and Extract presets are described by what they produce (container, encoder, bit rate, size), never by a platform name. Multi-track sources keep every audio and subtitle stream the container can hold, and the inspector says what a container cannot hold.
@@ -48,9 +48,9 @@ Every file in the queue is a job with its own settings: an operation (Normalize,
 - Output is a policy per batch: a folder or next to each source, a file-name template with fields, what to do when a name is taken (rename, skip, or overwrite), source subfolders, and one folder per preset. Replace originals is chosen per batch and never kept as a default; replaced files go to the recycle bin unless you choose to keep them beside the new ones.
 - Workers run jobs at once, automatically or at a fixed count. GPU encoding uses NVIDIA NVENC, Intel QSV, or AMD AMF with a session budget; only H.264 and HEVC have GPU encoders, lossless jobs stay on the CPU, and Review lists every job the GPU setting changes.
 
-<img alt="Batch, Review tab: the summary of what the batch writes, a note that H.264 cannot be stored in WebM so that output becomes MKV, each job's output file and encoder, and the selected job's output plan with the streams kept, the encoder, and the planned FFmpeg command." src=".github/assets/sections/review.png">
+<img alt="Batch, Review tab: the summary of what the batch writes, a note that H.264 cannot be stored in WebM so that output becomes MKV, each job's output file and encoder, and the selected job's output plan with its output path, the original left untouched, and the container change." src=".github/assets/sections/review.png">
 
-<img alt="Batch, Run tab during a batch: six jobs verified with their measured loudness, two encoding with progress, time left, and speed; on the right, progress by operation, the jobs running now, and the workers in use." src=".github/assets/sections/run.png">
+<img alt="Batch, Run tab during a batch: six jobs verified with their measured loudness, two encoding with progress and time left, and the workers in use in the header; on the right, progress by operation and the jobs running now." src=".github/assets/sections/run.png">
 
 ### Dashboard
 
@@ -63,19 +63,19 @@ The home view is a front panel: the counts of waiting, active, done, and jobs th
 - FFmpeg: the build in use with its version and source, the self-test result and when it ran, Re-run self-test, and Install the tested build when the build in use is not the one this version ships with.
 - Application: app updates from GitHub Releases, the yt-dlp section (the version in use, last check, automatic updates, and a switch to use the yt-dlp found on this computer), what the close button does, how the window opens, interface size, spoken batch progress, and the browser YouTube cookies come from.
 
-<img alt="Settings, Presets tab: the user's presets, the pinned keys Alt+1 to Alt+9, and the built-in Normalize presets listed by goal, each answered by one preset such as Streaming (EBU R 128 s2) or ATSC A/85." src=".github/assets/sections/settings-presets.png">
+<img alt="Settings, Presets tab: two presets of the user's own, the pinned keys Alt+1 to Alt+9, and the built-in Normalize presets listed by goal, each answered by one preset such as Streaming (EBU R 128 s2) or Clear dialogue." src=".github/assets/sections/settings-presets.png">
 
 ### Logs
 
 Every line the main process and its jobs wrote, as one list: a level filter, a sources menu, search, and Follow new lines narrow and track it; Copy lines, Open log folder, and Clear act on it. Show log from a job in Batch narrows the view to that job or batch, a job's complete FFmpeg output opens beside its lines, and a selected line opens in full in the details pane.
 
-<img alt="Logs: 1,092 lines from a batch with the level filter, sources menu, search, and Follow new lines; each line shows its time, level, source, and FFmpeg's own output under the job number." src=".github/assets/sections/logs.png">
+<img alt="Logs searched for one job: 76 of 1,285 lines, with the level filter, sources menu, search, and Follow new lines; each line shows its time, level, source, and FFmpeg's own output under the job number, here the verify pass's ebur128 summary followed by the job's verified line." src=".github/assets/sections/logs.png">
 
 ### First run
 
 Setup is one screen. It says what molexMedia needs and why, downloads the FFmpeg build this version is pinned to with the percent, size, and speed shown, checks the download against the SHA-256 the app ships with, and self-tests it. Or choose a folder with an FFmpeg already on this computer, which is self-tested the same way. yt-dlp downloads the first time you open a link in the Player.
 
-<img alt="First-run setup: what molexMedia needs, FFmpeg (required, downloaded from the pinned build, checked against its SHA-256, then self-tested) and yt-dlp (downloaded when you first open a link), with Download FFmpeg and Use an FFmpeg already on this computer." src=".github/assets/sections/setup.png">
+<img alt="First-run setup: what molexMedia needs, FFmpeg (required, downloaded from the pinned build, checked against its SHA-256, then self-tested, with a note that an FFmpeg already on this computer passed the self-test) and yt-dlp (downloaded when you first open a link), with Download FFmpeg, Use the FFmpeg on this computer, and Choose a folder." src=".github/assets/sections/setup.png">
 
 ### Editor
 
@@ -85,9 +85,9 @@ Setup is one screen. It says what molexMedia needs and why, downloads the FFmpeg
 
 <img alt="Editor, Trim: a frame of Big Buck Bunny in the preview, the in, out, and length readouts, the transport, the filmstrip with the selected range, and the export panel with the format and quality." src=".github/assets/sections/editor-trim.png">
 
-<img alt="Editor, Timeline: the sources, the preview, and two video clips on track V1 with the playhead in the first. The clip panel shows the selected clip's sound (mute, volume, pan) and picture (position, scale, rotation) with keyframe controls." src=".github/assets/sections/editor-timeline.png">
+<img alt="Editor, Timeline: two sources, the preview, and two video clips on track V1 with the playhead in the first. The clip panel shows the selected clip's start, length, and source range, and its sound controls: mute, volume, and pan." src=".github/assets/sections/editor-timeline.png">
 
-<img alt="Editor, Inspect: the ffprobe report of an MP4 as plain rows: container, length, size, and bit rate, then the H.264 video stream and the 5.1 AAC audio stream, each with a Keep in the copy checkbox, and Save a copy at the foot." src=".github/assets/sections/editor-inspect.png">
+<img alt="Editor, Inspect: the ffprobe report of a WebM as plain rows: container, length, size, bit rate, and stream count, then the VP9 video stream and the audio stream below it, each with a Keep in the copy checkbox, and Save a copy at the foot." src=".github/assets/sections/editor-inspect.png">
 
 ### Player
 
@@ -99,7 +99,7 @@ Setup is one screen. It says what molexMedia needs and why, downloads the FFmpeg
 - Pop out: a small window that stays on top, with three sizes and a remembered size, and Back to the app.
 - Media information: how the file is being played, then the file and each stream as a plain line with the technical values folded under it.
 
-<img alt="Player: Big Buck Bunny playing as video with the playlist of six tracks beside it, the Video or Visualization switch, the transport, and the track's container, codec, size, and audio layout." src=".github/assets/sections/player-video.png">
+<img alt="Player: Big Buck Bunny paused as video with the playlist of six tracks beside it, the Video or Visualization switch, the transport, and the track's container, codec, size, and audio layout." src=".github/assets/sections/player-video.png">
 
 <img alt="Player: the DMT visualization drawn from the playing audio, filling the stage." src=".github/assets/sections/player-visualization.png">
 
