@@ -94,6 +94,12 @@ html
     scrollbar-width: thin;
 }
 
+/* Native smooth scrolling is the fallback without JavaScript; Lenis (app/smooth.js) scrolls the page when it runs. */
+html.lenis
+{
+    scroll-behavior: auto;
+}
+
 body
 {
     margin: 0;
@@ -1635,6 +1641,61 @@ h1[tabindex='-1']:focus
     font-size: 0.8125rem;
 }
 
+.shot-open
+{
+    position: relative;
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: zoom-in;
+}
+
+.shot-open:focus-visible
+{
+    outline-offset: 3px;
+}
+
+.shot-chip
+{
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 28px;
+    padding: 0 10px;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-sm);
+    background: var(--overlay);
+    color: var(--ink);
+    font-size: 0.8125rem;
+    line-height: 1;
+    opacity: 0;
+    transition: opacity var(--fast);
+    pointer-events: none;
+}
+
+.shot-open:hover .shot-chip,
+.shot-open:focus-visible .shot-chip
+{
+    opacity: 1;
+}
+
+@media (hover: none)
+{
+    .shot-chip
+    {
+        opacity: 1;
+    }
+}
+
 .hero-shot
 {
     margin-top: 0;
@@ -1648,10 +1709,216 @@ h1[tabindex='-1']:focus
 /* The hero window keeps the app's 13 px text near 11 px: it reaches toward the viewport edge, or runs past it. */
 @media (min-width: 1081px)
 {
-    .hero-shot img
+    .hero-shot .shot-open
     {
         width: max(952px, min(100% + 160px, 100% + max(var(--gutter), (100vw - var(--wrap)) / 2)));
         max-width: none;
+    }
+}
+
+/* The screenshot viewer (app/viewer.js): the whole capture on an opaque ground, fitted or at actual pixels. */
+
+html:has(dialog[open])
+{
+    overflow: hidden;
+}
+
+.viewer
+{
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    max-height: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    background: var(--ground);
+    color: var(--ink);
+}
+
+.viewer[open]
+{
+    display: flex;
+    flex-direction: column;
+    animation: viewer-in var(--move) var(--ease-out);
+}
+
+.viewer::backdrop
+{
+    background: var(--ground);
+}
+
+@keyframes viewer-in
+{
+    from
+    {
+        opacity: 0;
+    }
+}
+
+.viewer-bar
+{
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 10px clamp(12px, 2vw, 24px);
+    border-bottom: 1px solid var(--rail-edge);
+    background: var(--rail);
+}
+
+.viewer-caption
+{
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+    color: var(--ink-2);
+    font-size: 0.875rem;
+    line-height: 1.45;
+}
+
+.viewer-controls
+{
+    display: flex;
+    flex: none;
+    align-items: center;
+    gap: 8px;
+}
+
+.viewer-nav
+{
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    margin-right: 4px;
+}
+
+.viewer-nav[hidden]
+{
+    display: none;
+}
+
+.viewer-count
+{
+    min-width: 4.5em;
+    color: var(--ink-2);
+    font-size: 0.8125rem;
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+}
+
+.viewer-btn
+{
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 36px;
+    padding: 0 12px;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    background: none;
+    color: var(--ink-2);
+    font: inherit;
+    font-size: 0.875rem;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background-color var(--fast), color var(--fast);
+}
+
+.viewer-btn:hover
+{
+    background: var(--wash-hover);
+    color: var(--ink);
+}
+
+.viewer-icon
+{
+    width: 36px;
+    padding: 0;
+}
+
+.viewer-toggle
+{
+    border-color: var(--line-strong);
+    background: var(--raised);
+    color: var(--ink);
+}
+
+.viewer-toggle:hover
+{
+    background: var(--raised-hover);
+}
+
+.viewer-stage
+{
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    padding: clamp(12px, 3vw, 32px);
+    overflow: auto;
+    overscroll-behavior: contain;
+}
+
+.viewer-stage picture
+{
+    display: contents;
+}
+
+.viewer-stage img
+{
+    flex: none;
+    height: auto;
+    margin: auto;
+    border: 1px solid var(--rail-edge);
+    border-radius: var(--radius-md);
+    background: var(--panel);
+    cursor: zoom-in;
+}
+
+.viewer-stage[data-actual]
+{
+    padding: 0;
+}
+
+.viewer-stage[data-actual] img
+{
+    border: 0;
+    border-radius: 0;
+    cursor: zoom-out;
+}
+
+.viewer-stage[data-panning],
+.viewer-stage[data-panning] img
+{
+    cursor: grabbing;
+    user-select: none;
+}
+
+.viewer-stage:focus-visible
+{
+    outline-offset: -2px;
+}
+
+@media (max-width: 760px)
+{
+    .viewer-bar
+    {
+        flex-direction: column-reverse;
+        align-items: stretch;
+        gap: 8px;
+        padding: 8px 12px 12px;
+    }
+
+    .viewer-controls
+    {
+        justify-content: space-between;
+    }
+
+    .viewer-nav
+    {
+        margin-right: auto;
     }
 }
 

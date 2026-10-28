@@ -43,7 +43,8 @@ export function stamp(outcome, values)
 
 /**
  * A capture of the app as a figure. Wider screens get the whole window from a width ladder; phones get a crop of it
- * at a readable scale. Both come from scripts/website-screens.mjs.
+ * at a readable scale. Both come from scripts/website-screens.mjs. The image is a button that opens the whole
+ * capture in the viewer (app/viewer.js).
  * @param {string} name Key in SCREENS.
  * @param {object} opts
  * @param {string} opts.alt Alternative text that holds for the whole window and for the phone crop.
@@ -60,8 +61,10 @@ export function screenshot(name, { alt, caption, sizes, priority = false, cls = 
     const full = (ext) => `<source type="image/${ext}" srcset="${set(name, s.widths, ext)}" sizes="${sizes}">`;
     const fallback = s.widths.find((w) => w >= 1280) ?? s.width;
     const load = priority ? 'fetchpriority="high"' : 'loading="lazy"';
-    return `<figure class="shot${cls ? ` ${cls}` : ''}"><picture>${phone('avif')}${phone('webp')}${full('avif')}${full('webp')}`
+    return `<figure class="shot${cls ? ` ${cls}` : ''}" data-shot="${name}"><button type="button" class="shot-open">`
+        + `<span class="sr">Enlarge screenshot: </span><picture>${phone('avif')}${phone('webp')}${full('avif')}${full('webp')}`
         + `<img src="assets/screens/${name}-${fallback}.webp" width="${s.width}" height="${s.height}" alt="${alt}" ${load} decoding="async"></picture>`
+        + `<span class="shot-chip" aria-hidden="true">${icon('maximize', 14)}Enlarge</span></button>`
         + `<figcaption>${caption}</figcaption></figure>`;
 }
 

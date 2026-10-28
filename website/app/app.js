@@ -1,5 +1,7 @@
 import { routes } from './routes.js';
 import { API_BASE, loadReleases } from './store.js';
+import { startSmoothScroll, landRoute, holdScroll } from './smooth.js';
+import { closeViewer } from './viewer.js';
 import './widgets.js';
 import './components/home.js';
 import './components/features.js';
@@ -35,6 +37,7 @@ function setMenu(open)
     toggle.setAttribute('aria-expanded', String(on));
     toggleLabel.textContent = on ? 'Close menu' : 'Open menu';
     document.documentElement.classList.toggle('menu-open', on);
+    holdScroll(on);
     for (const el of document.querySelectorAll('#skip-link, main, .foot'))
     {
         el.inert = on;
@@ -76,7 +79,8 @@ router.onChange((to) =>
 {
     syncChrome(to);
     setMenu(false);
-    if (!first)
+    closeViewer();
+    if (!first && !location.hash)
     {
         requestAnimationFrame(() =>
         {
@@ -88,6 +92,7 @@ router.onChange((to) =>
             }
         });
     }
+    landRoute(first);
     first = false;
 });
 
@@ -104,13 +109,6 @@ document.addEventListener('keydown', (e) =>
     }
 });
 
-document.getElementById('skip-link').addEventListener('click', (e) =>
-{
-    e.preventDefault();
-    const main = document.getElementById('main');
-    main.focus();
-    main.scrollIntoView();
-});
-
 syncChrome(router.current);
+startSmoothScroll();
 loadReleases();
