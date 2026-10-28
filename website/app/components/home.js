@@ -1,5 +1,5 @@
 import { icon } from '../icons.js';
-import { link, stamp, statusLabel, reducedMotion, MINUS } from '../parts.js';
+import { link, stamp, statusLabel, screenshot, editorShot, playerShot, MINUS } from '../parts.js';
 
 $.component('home-page', {
     render()
@@ -13,10 +13,13 @@ $.component('home-page', {
             <get-block></get-block>
         </div>
         <div class="hero-demo">
-            <app-window></app-window>
-            <p class="shot-note">${reducedMotion()
-                ? 'A recreation of the app in HTML. Press Start to run the queue, and switch between Batch, Editor, Player, and Logs. File names are examples.'
-                : 'A recreation of the app in HTML. The queue runs once when it comes into view, and Run again replays it. Switch between Batch, Editor, Player, and Logs. File names are examples.'}</p>
+            ${screenshot('run', {
+                alt: `The Batch Run tab partway through a run: six jobs marked Verified with their measured values, and two video encodes in progress.`,
+                caption: 'A real run of eight sample files in molexMedia: six are verified, and two video encodes are still going.',
+                sizes: '(max-width: 1080px) calc(100vw - 64px), 976px',
+                priority: true,
+                cls: 'hero-shot',
+            })}
         </div>
     </div>
     <div class="wrap">
@@ -70,7 +73,7 @@ $.component('home-page', {
             </ul>
             <p class="more-link">${link('/features/editor', `Export settings and every shortcut ${icon('arrow', 16)}`)}</p>
         </div>
-        <figure class="shot"><img src="assets/screens/editor.webp" width="1440" height="922" alt="The Editor in Trim: a video frame above the In, Out, and Length readouts, a thumbnail strip, and the export panel." loading="lazy"><figcaption>Trim, with the export panel open. Video: Big Buck Bunny, Blender Foundation, CC BY 3.0.</figcaption></figure>
+        ${editorShot('(max-width: 1080px) calc(100vw - 64px), 720px')}
     </div>
 </section>
 
@@ -87,7 +90,7 @@ $.component('home-page', {
             </ul>
             <p class="more-link">${link('/features/player', `Sources, shortcuts, and the pop-out ${icon('arrow', 16)}`)}</p>
         </div>
-        <figure class="shot"><img src="assets/screens/player.webp" width="1440" height="922" alt="The Player showing a video with the playlist beside it and the transport below." loading="lazy"><figcaption>The Player with the playlist shown. Video: Big Buck Bunny, Blender Foundation, CC BY 3.0.</figcaption></figure>
+        ${playerShot('(max-width: 1080px) calc(100vw - 64px), 720px')}
     </div>
 </section>
 

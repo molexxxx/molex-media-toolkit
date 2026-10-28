@@ -1,4 +1,4 @@
-import { link, MINUS } from '../parts.js';
+import { link, screenshot, MINUS } from '../parts.js';
 
 const STANDARDS = [
     ['EBU R 128', `${MINUS}23.0 LUFS`, `${MINUS}1.0 dBTP`, '±0.2 LU', 'Broadcast programs in Europe'],
@@ -99,7 +99,11 @@ $.component('batch-page', {
         <p class="crumbs">${link('/features', 'Features')}<span aria-hidden="true">/</span><span>Batch</span></p>
         <h1>Batch</h1>
         <p class="lead">Add files, give each job an operation, read the Review, and press Start. The tables below list each preset with the values the app applies.</p>
-        <figure class="shot"><img src="assets/screens/batch.webp" width="1440" height="922" alt="The Batch page: six queued jobs in the table, the run header above, and the inspector at the right." loading="lazy"><figcaption>The queue with six jobs and the inspector. File names are examples.</figcaption></figure>
+        ${screenshot('batch', {
+            alt: `A podcast job selected in the Batch queue, with its Apple Podcasts target of ${MINUS}16 LKFS and ${MINUS}1.0 dBTP in the inspector.`,
+            caption: `The inspector shows the selected job's preset and the standard behind it. File names are sample files.`,
+            sizes: '(max-width: 1344px) calc(100vw - 64px), 1280px',
+        })}
     </header>
     <div class="doc">
         <nav class="toc" aria-label="On this page">

@@ -1,4 +1,4 @@
-import { link } from '../parts.js';
+import { link, playerShot } from '../parts.js';
 
 const VISUALS = ['DMT', 'Space', 'Milkdrop', 'Plasma', 'Bars', 'Waveform', 'Horizon', 'Rain'];
 
@@ -35,7 +35,7 @@ $.component('player-page', {
         <p class="crumbs">${link('/features', 'Features')}<span aria-hidden="true">/</span><span>Player</span></p>
         <h1>Player</h1>
         <p class="lead">Plays local files and links, with the picture when there is one and a visualization when there is not. Keyboard media keys play, pause, and skip.</p>
-        <figure class="shot"><img src="assets/screens/player.webp" width="1440" height="922" alt="The Player showing a video with the playlist beside it and the transport below." loading="lazy"><figcaption>The Player with the playlist shown. Video: Big Buck Bunny, Blender Foundation, CC BY 3.0.</figcaption></figure>
+        ${playerShot('(max-width: 1344px) calc(100vw - 64px), 1280px')}
     </header>
     <div class="doc">
         <nav class="toc" aria-label="On this page">

@@ -1,4 +1,4 @@
-import { link } from '../parts.js';
+import { link, editorShot } from '../parts.js';
 
 const SHORTCUTS = [
     ['Editor', [
@@ -53,7 +53,7 @@ $.component('editor-page', {
         <p class="crumbs">${link('/features', 'Features')}<span aria-hidden="true">/</span><span>Editor</span></p>
         <h1>Editor</h1>
         <p class="lead">Three modes under one header: Trim for one file, Timeline for several, and Inspect for what a file holds. Open a file with Ctrl+O, or drop it anywhere on the page.</p>
-        <figure class="shot"><img src="assets/screens/editor.webp" width="1440" height="922" alt="The Editor in Trim: a video frame above the In, Out, and Length readouts, a thumbnail strip, and the export panel." loading="lazy"><figcaption>Trim, with the export panel open. Video: Big Buck Bunny, Blender Foundation, CC BY 3.0.</figcaption></figure>
+        ${editorShot('(max-width: 1344px) calc(100vw - 64px), 1280px')}
     </header>
     <div class="doc">
         <nav class="toc" aria-label="On this page">
