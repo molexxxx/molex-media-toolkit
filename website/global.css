@@ -88,6 +88,7 @@ html
 {
     -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
     scroll-behavior: smooth;
     scrollbar-color: var(--scrollbar) transparent;
     scrollbar-width: thin;
