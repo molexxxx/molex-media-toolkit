@@ -1,0 +1,16 @@
+{
+  "runs": 3,
+  "maxScriptKB": 90,
+  "minScores": {
+    "performance": 0.8,
+    "accessibility": 1,
+    "best-practices": 1,
+    "seo": 1
+  },
+  "pages": {
+    "/": {},
+    "/features/batch": {},
+    "/download": {},
+    "/changelog": { "performance": 0.6 }
+  }
+}

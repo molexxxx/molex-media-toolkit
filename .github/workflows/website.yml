@@ -1,0 +1,60 @@
+# Website: zerolith doctor, the vendored modules in step with the lockfile,
+# and the Lighthouse budget, on every change under website/.
+name: Website
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'website/**'
+      - '.github/workflows/website.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'website/**'
+      - '.github/workflows/website.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: website-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  budget:
+    name: Doctor and Lighthouse budget
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: website
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: website/package-lock.json
+
+      - run: npm ci
+
+      - name: zerolith doctor
+        run: npx zerolith doctor
+
+      - name: Vendored modules match the lockfile
+        run: |
+          npm run importmap
+          git diff --exit-code -- vendor index.html
+
+      - name: Lighthouse budget
+        run: npm run lighthouse
+
+      - name: Upload Lighthouse reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: lighthouse-reports
+          path: website/lighthouse-reports/
+          retention-days: 14
