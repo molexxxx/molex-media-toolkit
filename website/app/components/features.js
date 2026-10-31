@@ -1,9 +1,11 @@
+import { html } from 'zerolith';
 import { icon } from '../icons.js';
 import { link } from '../parts.js';
+import { router } from '../router.js';
 
 const COLUMNS = [
     {
-        path: '/features/batch',
+        route: 'batch',
         title: 'Batch',
         items: [
             ['Queue, Review, Run, History', 'Four views of one batch. Review lists every output path, encoder, and warning before anything runs.'],
@@ -16,7 +18,7 @@ const COLUMNS = [
         ],
     },
     {
-        path: '/features/editor',
+        route: 'editor',
         title: 'Editor',
         items: [
             ['Trim', 'Cut one file between in and out points, then export video, audio, or a GIF.'],
@@ -28,7 +30,7 @@ const COLUMNS = [
         ],
     },
     {
-        path: '/features/player',
+        route: 'player',
         title: 'Player',
         items: [
             ['Files and folders', 'Drop them anywhere on the page, or add them from the toolbar.'],
@@ -41,16 +43,16 @@ const COLUMNS = [
     },
 ];
 
-$.component('features-page', {
-    render()
-    {
-        const cols = COLUMNS.map((c) => `
-            <section class="index-col" aria-labelledby="idx-${c.path.split('/').pop()}">
-                <h2 id="idx-${c.path.split('/').pop()}">${link(c.path, c.title)}<span class="more">${link(c.path, `Details ${icon('arrow', 14)}`)}</span></h2>
-                <ul>${c.items.map(([t, d]) => `<li><strong>${t}</strong>${d}</li>`).join('')}</ul>
-            </section>`).join('');
+/** The features index: each tool's highlights with a link to its page, then the rest of the app. */
+export function Features()
+{
+    const cols = COLUMNS.map((c) => html`
+            <section class="index-col" aria-labelledby=${`idx-${c.route}`}>
+                <h2 id=${`idx-${c.route}`}>${link(router.href(c.route), c.title)}<span class="more">${link(router.href(c.route), html`Details ${icon('arrow', 14)}`)}</span></h2>
+                <ul>${c.items.map(([t, d]) => html`<li><strong>${t}</strong>${d}</li>`)}</ul>
+            </section>`);
 
-        return `
+    return html`
 <div class="wrap">
     <header class="page-head">
         <h1>Features</h1>
@@ -72,5 +74,4 @@ $.component('features-page', {
         </div>
     </section>
 </div>`;
-    },
-});
+}

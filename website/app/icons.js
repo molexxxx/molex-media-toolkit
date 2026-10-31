@@ -1,3 +1,5 @@
+import { unsafeHtml } from 'zerolith';
+
 // Stroke icons drawn from the Lucide set, the same family the app uses.
 
 const paths = {
@@ -27,15 +29,16 @@ const paths = {
 };
 
 /**
- * Returns an inline SVG icon.
+ * Returns an inline SVG icon. Markup bound into an svg element parses in the HTML namespace, where path elements do not
+ * draw, so the icon is the trusted markup of the whole svg element.
  * @param {string} name Key in the icon table.
  * @param {number} [size=16] Rendered width and height in pixels.
  * @param {string} [label] Accessible name; the icon is hidden from assistive tech without one.
  * @param {string} [cls] Extra class names.
- * @returns {string} SVG markup.
+ * @returns {import('zerolith').View}
  */
 export function icon(name, size = 16, label, cls = '')
 {
     const a11y = label ? `role="img" aria-label="${label}"` : 'aria-hidden="true"';
-    return `<svg class="ico${cls ? ` ${cls}` : ''}" width="${size}" height="${size}" viewBox="0 0 24 24" ${a11y}>${paths[name] || ''}</svg>`;
+    return unsafeHtml(`<svg class="ico${cls ? ` ${cls}` : ''}" width="${size}" height="${size}" viewBox="0 0 24 24" ${a11y}>${paths[name] || ''}</svg>`);
 }

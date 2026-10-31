@@ -2266,19 +2266,3 @@ html:has(dialog[open])
         transition-duration: 0.01ms !important;
     }
 }
-
-home-page,
-features-page,
-batch-page,
-editor-page,
-player-page,
-download-page,
-changelog-page,
-not-found,
-get-block,
-platform-list,
-release-list,
-builds-table
-{
-    display: block;
-}

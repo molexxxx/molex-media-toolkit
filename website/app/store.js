@@ -1,3 +1,5 @@
+import { computed, resource, signal, untracked } from 'zerolith';
+
 const isLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
 
 export const API_BASE = isLocal ? 'http://localhost:3610' : 'https://media-api.molex.cloud';
@@ -5,101 +7,96 @@ export const REPO = 'https://github.com/molexxxx/molex-media-toolkit';
 export const RELEASES_URL = `${REPO}/releases`;
 export const LATEST_URL = `${REPO}/releases/latest`;
 const CHANGELOG_URL = 'https://raw.githubusercontent.com/molexxxx/molex-media-toolkit/main/CHANGELOG.md';
+const TIMEOUT = 15000;
 
-export const store = $.store('app', {
-    state: {
-        releases: [],
-        status: 'idle',
-        notes: {},
-        notesStatus: 'idle',
-    },
-    actions: {
-        setReleases(state, list)
+/**
+ * Fetches a URL and rejects on a status outside 200 to 299.
+ * @param {string} url
+ * @param {RequestInit} init
+ * @returns {Promise<Response>}
+ */
+async function request(url, init)
+{
+    const res = await fetch(url, init);
+    if (!res.ok)
+    {
+        throw new Error(`HTTP ${res.status}`);
+    }
+    return res;
+}
+
+/** The cached GitHub releases from website-api, loaded at startup; `releases.reload()` tries again. */
+export const releases = resource({
+    params: () => API_BASE,
+    loader: async ({ params, abort }) =>
+    {
+        const res = await request(`${params}/releases`, { signal: AbortSignal.any([abort, AbortSignal.timeout(TIMEOUT)]) });
+        const list = await res.json();
+        if (!Array.isArray(list))
         {
-            state.releases = list;
-        },
-        setStatus(state, status)
-        {
-            state.status = status;
-        },
-        setNotes(state, notes)
-        {
-            state.notes = notes;
-        },
-        setNotesStatus(state, status)
-        {
-            state.notesStatus = status;
-        },
-    },
-    getters: {
-        published(state)
-        {
-            return state.releases.filter((r) => !r.draft && !r.prerelease);
-        },
-        latest(state)
-        {
-            return state.releases.find((r) => !r.draft && !r.prerelease) || null;
-        },
+            throw new Error('Release data is not a list');
+        }
+        return list;
     },
 });
 
-/**
- * Loads the cached GitHub releases from website-api once, or again when forced.
- * @param {boolean} [force=false] Reload even after a successful or failed load.
- */
-export async function loadReleases(force = false)
+const notesWanted = signal(false);
+
+/** CHANGELOG.md from the repository, indexed by version; it loads the first time a release list asks for it. */
+export const notes = resource({
+    params: () => (notesWanted.get() ? CHANGELOG_URL : undefined),
+    loader: async ({ params, abort }) => parseChangelog(await (await request(params, { cache: 'no-cache', signal: abort })).text()),
+});
+
+/** Published releases, newest first, without drafts and prereleases. */
+export const published = computed(() => (releases.get() ?? []).filter((r) => !r.draft && !r.prerelease));
+
+/** The newest published release, or null. */
+export const latest = computed(() => published.get()[0] ?? null);
+
+/** True until the first release request settles, and while a retry runs. */
+export const releasesLoading = computed(() => ['idle', 'pending'].includes(releases.status.get()));
+
+/** True when the last release request failed. */
+export const releasesFailed = computed(() => releases.status.get() === 'error');
+
+/** The installers of the newest release. */
+export const latestFiles = computed(() => installers(latest.get()));
+
+/** The version of the newest release, or an empty string. */
+export const latestVersion = computed(() => fmt.version(latest.get()));
+
+/** Loads the releases again when the last attempt failed, as each release widget does when it appears. */
+export function retryFailedReleases()
 {
-    const { status } = store.state;
-    if (!force && (status === 'loading' || status === 'ready'))
+    if (untracked(() => releases.status.get()) === 'error')
     {
-        return;
+        releases.reload();
     }
-    store.dispatch('setStatus', 'loading');
-    try
+}
+
+/** Starts loading the release notes the first time a list needs them, and again after a failed attempt. */
+export function requestNotes()
+{
+    if (!untracked(() => notesWanted.get()))
     {
-        const res = await $.get('/releases');
-        if (Array.isArray(res.data))
-        {
-            store.dispatch('setReleases', res.data);
-            store.dispatch('setStatus', 'ready');
-        }
-        else
-        {
-            store.dispatch('setStatus', 'error');
-        }
+        notesWanted.set(true);
     }
-    catch
+    else if (untracked(() => notes.status.get()) === 'error')
     {
-        store.dispatch('setStatus', 'error');
+        notes.reload();
     }
 }
 
 /**
- * Loads CHANGELOG.md from the repository and indexes its entries by version.
- * @param {boolean} [force=false] Reload even after a previous attempt.
+ * Escapes text for HTML built as a string, such as what markdown() returns.
+ * @param {string} text
+ * @returns {string}
  */
-export async function loadNotes(force = false)
+export function escapeHtml(text)
 {
-    const { notesStatus } = store.state;
-    if (!force && (notesStatus === 'loading' || notesStatus === 'ready'))
-    {
-        return;
-    }
-    store.dispatch('setNotesStatus', 'loading');
-    try
-    {
-        const res = await fetch(CHANGELOG_URL, { cache: 'no-cache' });
-        if (!res.ok)
-        {
-            throw new Error(`HTTP ${res.status}`);
-        }
-        store.dispatch('setNotes', parseChangelog(await res.text()));
-        store.dispatch('setNotesStatus', 'ready');
-    }
-    catch
-    {
-        store.dispatch('setNotesStatus', 'error');
-    }
+    const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+    return String(text).replace(/[&<>"']/g, (c) => map[c]);
 }
 
 /**
@@ -319,7 +316,7 @@ export const fmt = {
 export function markdown(src)
 {
     src = repairText(src);
-    const inline = (s) => $.escapeHtml(s)
+    const inline = (s) => escapeHtml(s)
         .replace(/\x60([^\x60]+)\x60/g, '<code>$1</code>')
         .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
         .replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, '<a href="$2" rel="noopener">$1</a>')

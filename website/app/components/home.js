@@ -1,16 +1,20 @@
+import { html } from 'zerolith';
 import { icon } from '../icons.js';
 import { link, stamp, statusLabel, screenshot, editorShot, playerShot, MINUS } from '../parts.js';
+import { router } from '../router.js';
+import { GetBlock } from './get-block.js';
+import { PlatformList } from './platform-list.js';
 
-$.component('home-page', {
-    render()
-    {
-        return `
+/** The home page: the download next to a capture of a batch run, then each tool, the FFmpeg it runs, and the download again. */
+export function Home()
+{
+    return html`
 <section class="hero" aria-labelledby="home-title">
     <div class="wrap hero-grid">
         <div class="hero-copy">
             <h1 id="home-title">Batch, trim, and play media on FFmpeg</h1>
             <p class="hero-pitch">molexMedia normalizes whole folders to named loudness standards, converts and compresses with your GPU, trims and edits on a timeline, and plays files and links, in one desktop window. It downloads and verifies its own FFmpeg the first time it runs.</p>
-            <get-block></get-block>
+            ${GetBlock()}
         </div>
         <div class="hero-demo">
             ${screenshot('run', {
@@ -41,12 +45,12 @@ $.component('home-page', {
             <p class="lead">Give each file an operation, read the Review, then run the whole queue. Originals stay untouched unless you choose Replace originals, and every finished job is stamped with what was measured in its output.</p>
             <ul class="rows ops-list">
                 <li><strong>Normalize</strong><span>To a named standard such as EBU R 128, ATSC A/85, or Apple Podcasts. Measured with ebur128, then a planned gain and a true-peak limiter oversampled 2x.</span></li>
-                <li><strong>Gain</strong><span>Plain gain in dB with an optional high-pass filter, limited at ${MINUS}1.0 dBTP.</span></li>
+                <li><strong>Gain</strong><span>Plain gain in dB with an optional high-pass filter, limited at −1.0 dBTP.</span></li>
                 <li><strong>Convert</strong><span>28 presets, from MP4 and MKV to ProRes, FFV1, and audio-only formats, or your own settings.</span></li>
                 <li><strong>Compress</strong><span>x264, x265, VP9, AOM AV1, or SVT-AV1 by quality tier, exact CRF, or target size. NVENC, Quick Sync, and AMF take H.264 and HEVC when the GPU is on.</span></li>
                 <li><strong>Extract</strong><span>Audio, silent video, a GIF, still frames, or text subtitles, from 18 presets.</span></li>
             </ul>
-            <p class="more-link">${link('/features/batch', `Standards, presets, and encoders ${icon('arrow', 16)}`)}</p>
+            <p class="more-link">${link(router.href('batch'), html`Standards, presets, and encoders ${icon('arrow', 16)}`)}</p>
         </div>
         <div class="stampcase stick">
             <h3>What a finished job says</h3>
@@ -71,7 +75,7 @@ $.component('home-page', {
                 <li><strong>Timeline</strong><span>Arrange clips from several files on video and audio tracks, then export one MP4, WebM, MOV, or MKV.</span></li>
                 <li><strong>Inspect</strong><span>See every stream and tag, and save a copy without the ones you remove. Nothing is re-encoded.</span></li>
             </ul>
-            <p class="more-link">${link('/features/editor', `Export settings and every shortcut ${icon('arrow', 16)}`)}</p>
+            <p class="more-link">${link(router.href('editor'), html`Export settings and every shortcut ${icon('arrow', 16)}`)}</p>
         </div>
         ${editorShot('(max-width: 1080px) calc(100vw - 64px), 720px')}
     </div>
@@ -88,7 +92,7 @@ $.component('home-page', {
                 <li><strong>Links</strong><span>A video, a playlist, or a direct link to a media file, with sound and picture quality chosen per link.</span></li>
                 <li><strong>Pop out</strong><span>A small window that stays on top, with its own transport. Playback continues where it was.</span></li>
             </ul>
-            <p class="more-link">${link('/features/player', `Sources, shortcuts, and the pop-out ${icon('arrow', 16)}`)}</p>
+            <p class="more-link">${link(router.href('player'), html`Sources, shortcuts, and the pop-out ${icon('arrow', 16)}`)}</p>
         </div>
         ${playerShot('(max-width: 1080px) calc(100vw - 64px), 720px')}
     </div>
@@ -121,8 +125,7 @@ $.component('home-page', {
             <h2 id="h-get">Download molexMedia</h2>
             <p class="lead">Free and open source under the MIT license, for Windows, macOS, and Linux. The Windows and macOS builds and the Linux AppImage update themselves from GitHub Releases. The source code, the issue tracker, and every past release are on <a href="https://github.com/molexxxx/molex-media-toolkit" rel="noopener">GitHub</a>.</p>
         </div>
-        <platform-list></platform-list>
+        ${PlatformList()}
     </div>
 </section>`;
-    },
-});
+}

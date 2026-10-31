@@ -1,4 +1,6 @@
+import { html } from 'zerolith';
 import { link, playerShot } from '../parts.js';
+import { router } from '../router.js';
 
 const VISUALS = ['DMT', 'Space', 'Milkdrop', 'Plasma', 'Bars', 'Waveform', 'Horizon', 'Rain'];
 
@@ -22,17 +24,18 @@ const SHORTCUTS = [
     ]],
 ];
 
-$.component('player-page', {
-    render()
-    {
-        const keys = SHORTCUTS.map(([group, rows]) => `
+/** The Player page: sources, video, visualizations, and the pop-out window, then every keyboard shortcut. */
+export function Player()
+{
+    const page = router.href('player');
+    const keys = SHORTCUTS.map(([group, rows]) => html`
             <h3>${group}</h3>
-            <dl class="keys">${rows.map(([k, what]) => `<div><dt>${what}</dt><dd>${k.map((x) => `<kbd>${x}</kbd>`).join('')}</dd></div>`).join('')}</dl>`).join('');
+            <dl class="keys">${rows.map(([k, what]) => html`<div><dt>${what}</dt><dd>${k.map((x) => html`<kbd>${x}</kbd>`)}</dd></div>`)}</dl>`);
 
-        return `
+    return html`
 <div class="wrap">
     <header class="page-head">
-        <p class="crumbs">${link('/features', 'Features')}<span aria-hidden="true">/</span><span>Player</span></p>
+        <p class="crumbs">${link(router.href('features'), 'Features')}<span aria-hidden="true">/</span><span>Player</span></p>
         <h1>Player</h1>
         <p class="lead">Plays local files and links, with the picture when there is one and a visualization when there is not. Keyboard media keys play, pause, and skip.</p>
         ${playerShot('(max-width: 1344px) calc(100vw - 64px), 1280px')}
@@ -40,11 +43,11 @@ $.component('player-page', {
     <div class="doc">
         <nav class="toc" aria-label="On this page">
             <p class="toc-title">On this page</p>
-            <a href="/features/player#sources">Sources</a>
-            <a href="/features/player#video">Video and full screen</a>
-            <a href="/features/player#visuals">Visualizations</a>
-            <a href="/features/player#popout">Pop-out window</a>
-            <a href="/features/player#keys">Keyboard shortcuts</a>
+            <a href=${`${page}#sources`}>Sources</a>
+            <a href=${`${page}#video`}>Video and full screen</a>
+            <a href=${`${page}#visuals`}>Visualizations</a>
+            <a href=${`${page}#popout`}>Pop-out window</a>
+            <a href=${`${page}#keys`}>Keyboard shortcuts</a>
         </nav>
         <div>
             <section class="doc-sec" id="sources" aria-labelledby="h-sources">
@@ -70,7 +73,7 @@ $.component('player-page', {
 
             <section class="doc-sec" id="visuals" aria-labelledby="h-visuals">
                 <h2 id="h-visuals">Visualizations</h2>
-                <p>Eight visualizations drawn on a canvas from the Web Audio API, chosen from the toolbar or stepped with V. ${VISUALS.join(', ')}.</p>
+                <p>${`Eight visualizations drawn on a canvas from the Web Audio API, chosen from the toolbar or stepped with V. ${VISUALS.join(', ')}.`}</p>
             </section>
 
             <section class="doc-sec" id="popout" aria-labelledby="h-popout">
@@ -86,5 +89,4 @@ $.component('player-page', {
         </div>
     </div>
 </div>`;
-    },
-});
+}

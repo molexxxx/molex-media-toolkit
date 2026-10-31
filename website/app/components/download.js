@@ -1,9 +1,12 @@
+import { html } from 'zerolith';
 import { link } from '../parts.js';
+import { router } from '../router.js';
+import { PlatformList } from './platform-list.js';
 
-$.component('download-page', {
-    render()
-    {
-        return `
+/** The Download page: every installer with its install steps, what happens after installing, and other ways to get it. */
+export function Download()
+{
+    return html`
 <div class="wrap">
     <header class="page-head">
         <h1>Download molexMedia</h1>
@@ -12,7 +15,7 @@ $.component('download-page', {
     <div class="dl-grid">
         <div>
             <h2 class="sr">Installers</h2>
-            <platform-list detail="true"></platform-list>
+            ${PlatformList({ detail: true })}
         </div>
         <div class="dl-aside">
             <div class="steps">
@@ -29,11 +32,10 @@ $.component('download-page', {
                 <ul class="bullets">
                     <li>Every past version is on the <a href="https://github.com/molexxxx/molex-media-toolkit/releases" rel="noopener">GitHub releases page</a>.</li>
                     <li>Build it yourself from the <a href="https://github.com/molexxxx/molex-media-toolkit" rel="noopener">source code</a> with Node.js: <code>npm install</code>, then <code>npm run package:win</code>, <code>package:mac</code>, or <code>package:linux</code>.</li>
-                    <li>See what changed in each release in the ${link('/changelog', 'changelog')}.</li>
+                    <li>See what changed in each release in the ${link(router.href('changelog'), 'changelog')}.</li>
                 </ul>
             </div>
         </div>
     </div>
 </div>`;
-    },
-});
+}

@@ -1,4 +1,6 @@
+import { html } from 'zerolith';
 import { link, screenshot, MINUS } from '../parts.js';
+import { router } from '../router.js';
 
 const STANDARDS = [
     ['EBU R 128', `${MINUS}23.0 LUFS`, `${MINUS}1.0 dBTP`, '±0.2 LU', 'Broadcast programs in Europe'],
@@ -86,17 +88,19 @@ const EXTRACT = [
     ['Subtitles', 'Text subtitles saved as sidecar files', 'Subtitles to SRT; Subtitles to WebVTT; Subtitles to ASS'],
 ];
 
-$.component('batch-page', {
-    render()
-    {
-        const convertRows = CONVERT.map(([group, rows]) =>
-            `<tr class="grp"><th colspan="5" scope="colgroup">${group}</th></tr>` +
-            rows.map(([n, c, v, a, x]) => `<tr><th scope="row">${n}</th><td>${c}</td><td>${v || 'None'}</td><td>${a}</td><td>${x}</td></tr>`).join('')).join('');
+/** The Batch page: the queue's views, then every preset of each operation with the values the app applies. */
+export function Batch()
+{
+    const page = router.href('batch');
+    const convertRows = CONVERT.map(([group, rows]) => [
+        html`<tr class="grp"><th colspan="5" scope="colgroup">${group}</th></tr>`,
+        rows.map(([n, c, v, a, x]) => html`<tr><th scope="row">${n}</th><td>${c}</td><td>${v || 'None'}</td><td>${a}</td><td>${x}</td></tr>`),
+    ]);
 
-        return `
+    return html`
 <div class="wrap">
     <header class="page-head">
-        <p class="crumbs">${link('/features', 'Features')}<span aria-hidden="true">/</span><span>Batch</span></p>
+        <p class="crumbs">${link(router.href('features'), 'Features')}<span aria-hidden="true">/</span><span>Batch</span></p>
         <h1>Batch</h1>
         <p class="lead">Add files, give each job an operation, read the Review, and press Start. The tables below list each preset with the values the app applies.</p>
         ${screenshot('batch', {
@@ -108,13 +112,13 @@ $.component('batch-page', {
     <div class="doc">
         <nav class="toc" aria-label="On this page">
             <p class="toc-title">On this page</p>
-            <a href="/features/batch#flow">Queue, Review, Run, History</a>
-            <a href="/features/batch#normalize">Normalize</a>
-            <a href="/features/batch#gain">Gain</a>
-            <a href="/features/batch#convert">Convert</a>
-            <a href="/features/batch#compress">Compress</a>
-            <a href="/features/batch#extract">Extract</a>
-            <a href="/features/batch#output">Output and streams</a>
+            <a href=${`${page}#flow`}>Queue, Review, Run, History</a>
+            <a href=${`${page}#normalize`}>Normalize</a>
+            <a href=${`${page}#gain`}>Gain</a>
+            <a href=${`${page}#convert`}>Convert</a>
+            <a href=${`${page}#compress`}>Compress</a>
+            <a href=${`${page}#extract`}>Extract</a>
+            <a href=${`${page}#output`}>Output and streams</a>
         </nav>
         <div>
             <section class="doc-sec" id="flow" aria-labelledby="h-flow">
@@ -123,7 +127,7 @@ $.component('batch-page', {
                 <ul class="bullets" style="margin-top:16px">
                     <li><strong>Review</strong> lists every output path, encoder, and warning before anything runs, and says what will be written and what will not be touched.</li>
                     <li><strong>Run</strong> shows each job's status, progress, time, and speed, with Pause and Cancel run in the header. Workers and output are chosen there too.</li>
-                    <li><strong>Stamps.</strong> Each finished job is measured again in its output and stamped Verified, or Returned with the reason, such as "True peak ${MINUS}0.4 dBTP over ${MINUS}1.0". A returned job waits for your decision.</li>
+                    <li><strong>Stamps.</strong> Each finished job is measured again in its output and stamped Verified, or Returned with the reason, such as "True peak −0.4 dBTP over −1.0". A returned job waits for your decision.</li>
                     <li><strong>History</strong> keeps every batch with its report, which can be exported.</li>
                     <li><strong>Hardware encoding.</strong> NVENC, Quick Sync, and AMF take H.264 and HEVC, found with a one-frame test encode. A job that cannot get a GPU session waits or runs on the CPU and says so.</li>
                 </ul>
@@ -134,7 +138,7 @@ $.component('batch-page', {
                 <p>Loudness is measured with FFmpeg's <code>ebur128</code> meter to ITU-R BS.1770, the gain is planned from that measurement, and a true-peak limiter oversampled 2x holds the ceiling. The output is measured again before the job is stamped. Each standard is cited to its source document in the app, with the tolerance it states.</p>
                 <div class="spec-wrap"><table class="spec">
                     <thead><tr><th scope="col">Preset</th><th scope="col">Loudness</th><th scope="col">True peak</th><th scope="col">Tolerance</th><th scope="col">Notes</th></tr></thead>
-                    <tbody>${STANDARDS.map(([n, i, tp, tol, note]) => `<tr><th scope="row">${n}</th><td class="num">${i}</td><td class="num">${tp}</td><td class="num">${tol}</td><td>${note}</td></tr>`).join('')}</tbody>
+                    <tbody>${STANDARDS.map(([n, i, tp, tol, note]) => html`<tr><th scope="row">${n}</th><td class="num">${i}</td><td class="num">${tp}</td><td class="num">${tol}</td><td>${note}</td></tr>`)}</tbody>
                 </table></div>
                 <h3>What the measurement cannot fix</h3>
                 <ul class="bullets">
@@ -146,10 +150,10 @@ $.component('batch-page', {
 
             <section class="doc-sec" id="gain" aria-labelledby="h-gain">
                 <h2 id="h-gain">Gain</h2>
-                <p>Gain in dB on every audio stream, keeping each stream's own channel layout and sample rate. The limiter runs <code>alimiter</code> with <code>level=disabled</code> and <code>latency=1</code>, oversampled 2x, at ${MINUS}1.0 dBTP with up to 3 dB of limiting before the job is returned.</p>
+                <p>Gain in dB on every audio stream, keeping each stream's own channel layout and sample rate. The limiter runs <code>alimiter</code> with <code>level=disabled</code> and <code>latency=1</code>, oversampled 2x, at −1.0 dBTP with up to 3 dB of limiting before the job is returned.</p>
                 <div class="spec-wrap"><table class="spec">
                     <thead><tr><th scope="col">Preset</th><th scope="col">Gain</th><th scope="col">High-pass</th></tr></thead>
-                    <tbody>${GAIN.map(([n, g, h]) => `<tr><th scope="row">${n}</th><td class="num">${g}</td><td class="num">${h}</td></tr>`).join('')}</tbody>
+                    <tbody>${GAIN.map(([n, g, h]) => html`<tr><th scope="row">${n}</th><td class="num">${g}</td><td class="num">${h}</td></tr>`)}</tbody>
                 </table></div>
             </section>
 
@@ -167,11 +171,11 @@ $.component('batch-page', {
                 <p>Choose an encoder and a quality tier, an exact CRF, or a target file size with optional two-pass. Speed maps to each encoder's own preset scale, and tunes such as film, grain, and animation are passed through.</p>
                 <div class="spec-wrap"><table class="spec">
                     <thead><tr><th scope="col">Encoder</th><th scope="col">FFmpeg</th><th scope="col">Lossless tier</th></tr></thead>
-                    <tbody>${ENCODERS.map(([n, f, x]) => `<tr><th scope="row">${n}</th><td><code>${f}</code></td><td>${x.startsWith('-') ? `<code>${x}</code>` : x}</td></tr>`).join('')}</tbody>
+                    <tbody>${ENCODERS.map(([n, f, x]) => html`<tr><th scope="row">${n}</th><td><code>${f}</code></td><td>${x.startsWith('-') ? html`<code>${x}</code>` : x}</td></tr>`)}</tbody>
                 </table></div>
                 <h3>Presets</h3>
                 <div class="spec-wrap"><table class="spec">
-                    <tbody>${COMPRESS.map(([g, names]) => `<tr><th scope="row">${g}</th><td>${names.join(', ')}</td></tr>`).join('')}</tbody>
+                    <tbody>${COMPRESS.map(([g, names]) => html`<tr><th scope="row">${g}</th><td>${names.join(', ')}</td></tr>`)}</tbody>
                 </table></div>
                 <h3>Target size</h3>
                 <ul class="bullets">
@@ -186,7 +190,7 @@ $.component('batch-page', {
                 <p>Five modes and 18 presets for pulling one part out of a file.</p>
                 <div class="spec-wrap"><table class="spec">
                     <thead><tr><th scope="col">Mode</th><th scope="col">What you get</th><th scope="col">Presets</th></tr></thead>
-                    <tbody>${EXTRACT.map(([m, w, p]) => `<tr><th scope="row">${m}</th><td>${w}</td><td>${p}</td></tr>`).join('')}</tbody>
+                    <tbody>${EXTRACT.map(([m, w, p]) => html`<tr><th scope="row">${m}</th><td>${w}</td><td>${p}</td></tr>`)}</tbody>
                 </table></div>
             </section>
 
@@ -203,5 +207,4 @@ $.component('batch-page', {
         </div>
     </div>
 </div>`;
-    },
-});
+}

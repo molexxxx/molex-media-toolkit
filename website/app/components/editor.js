@@ -1,4 +1,6 @@
+import { html } from 'zerolith';
 import { link, editorShot } from '../parts.js';
+import { router } from '../router.js';
 
 const SHORTCUTS = [
     ['Editor', [
@@ -40,17 +42,18 @@ const SHORTCUTS = [
     ]],
 ];
 
-$.component('editor-page', {
-    render()
-    {
-        const keys = SHORTCUTS.map(([group, rows]) => `
+/** The Editor page: Trim, Timeline, and Inspect with their export settings, then every keyboard shortcut. */
+export function Editor()
+{
+    const page = router.href('editor');
+    const keys = SHORTCUTS.map(([group, rows]) => html`
             <h3>${group}</h3>
-            <dl class="keys">${rows.map(([k, what]) => `<div><dt>${what}</dt><dd>${k.map((x) => `<kbd>${x}</kbd>`).join('')}</dd></div>`).join('')}</dl>`).join('');
+            <dl class="keys">${rows.map(([k, what]) => html`<div><dt>${what}</dt><dd>${k.map((x) => html`<kbd>${x}</kbd>`)}</dd></div>`)}</dl>`);
 
-        return `
+    return html`
 <div class="wrap">
     <header class="page-head">
-        <p class="crumbs">${link('/features', 'Features')}<span aria-hidden="true">/</span><span>Editor</span></p>
+        <p class="crumbs">${link(router.href('features'), 'Features')}<span aria-hidden="true">/</span><span>Editor</span></p>
         <h1>Editor</h1>
         <p class="lead">Three modes under one header: Trim for one file, Timeline for several, and Inspect for what a file holds. Open a file with Ctrl+O, or drop it anywhere on the page.</p>
         ${editorShot('(max-width: 1344px) calc(100vw - 64px), 1280px')}
@@ -58,10 +61,10 @@ $.component('editor-page', {
     <div class="doc">
         <nav class="toc" aria-label="On this page">
             <p class="toc-title">On this page</p>
-            <a href="/features/editor#trim">Trim</a>
-            <a href="/features/editor#timeline">Timeline</a>
-            <a href="/features/editor#inspect">Inspect</a>
-            <a href="/features/editor#keys">Keyboard shortcuts</a>
+            <a href=${`${page}#trim`}>Trim</a>
+            <a href=${`${page}#timeline`}>Timeline</a>
+            <a href=${`${page}#inspect`}>Inspect</a>
+            <a href=${`${page}#keys`}>Keyboard shortcuts</a>
         </nav>
         <div>
             <section class="doc-sec" id="trim" aria-labelledby="h-trim">
@@ -107,5 +110,4 @@ $.component('editor-page', {
         </div>
     </div>
 </div>`;
-    },
-});
+}

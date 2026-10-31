@@ -1,8 +1,10 @@
+import { mediaQuery, reducedMotion } from '@zerolith/a11y';
+
 /** The vendored Lenis build, loaded at run time so it stays byte for byte as published (vendor/lenis/README.md). */
 const LENIS_URL = new URL('vendor/lenis/lenis.mjs', document.baseURI).href;
 
-const still = window.matchMedia('(prefers-reduced-motion: reduce)');
-const desktop = window.matchMedia('(hover: hover) and (pointer: fine)');
+const still = reducedMotion();
+const desktop = mediaQuery('(hover: hover) and (pointer: fine)');
 
 /** The running smooth scroller, or null under reduced motion. */
 let lenis = null;
@@ -38,7 +40,7 @@ window.addEventListener('wheel', (e) =>
  */
 export async function startSmoothScroll()
 {
-    if (still.matches || lenis)
+    if (still.get() || lenis)
     {
         return;
     }
@@ -66,7 +68,7 @@ export function scrollPage(top, immediate, onComplete = () => {})
         lenis.scrollTo(top, { immediate, force: true, onComplete });
         return;
     }
-    if (immediate || still.matches)
+    if (immediate || still.get())
     {
         window.scrollTo({ top, behavior: 'instant' });
         onComplete();
@@ -117,7 +119,7 @@ function goTo(el, instant = false)
         el.setAttribute('tabindex', '-1');
     }
     el.focus({ preventScroll: true });
-    scrollPage(top, instant || far || still.matches);
+    scrollPage(top, instant || far || still.get());
 }
 
 /** The element a URL fragment names, if the page has it. */
@@ -185,7 +187,7 @@ function onAnchorClick(e)
  */
 function warmCaptures()
 {
-    if (!desktop.matches)
+    if (!desktop.get())
     {
         return;
     }

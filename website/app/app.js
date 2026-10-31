@@ -1,26 +1,19 @@
-import { routes } from './routes.js';
-import { API_BASE, loadReleases } from './store.js';
+import { effect, render, signal, untracked } from 'zerolith';
+import { mediaQuery } from '@zerolith/a11y';
+import { router } from './router.js';
+import { NOT_FOUND } from './routes.js';
 import { startSmoothScroll, landRoute, holdScroll } from './smooth.js';
 import { closeViewer } from './viewer.js';
-import './widgets.js';
-import './components/home.js';
-import './components/features.js';
-import './components/batch.js';
-import './components/editor.js';
-import './components/player.js';
-import './components/download.js';
-import './components/changelog.js';
-import './components/not-found.js';
-
-$.http.configure({ baseURL: API_BASE, timeout: 15000 });
 
 const nav = document.getElementById('nav');
 const toggle = document.getElementById('nav-toggle');
 const toggleLabel = toggle.querySelector('.sr');
 const menu = document.getElementById('nav-links');
-const narrow = window.matchMedia('(max-width: 760px)');
 const description = document.querySelector('meta[name="description"]');
-const defaults = { title: document.title, description: description?.content || '' };
+const narrow = mediaQuery('(max-width: 760px)');
+
+/** Whether the mobile menu is open. */
+const menuOpen = signal(false);
 
 /**
  * Opens or closes the mobile menu. While it is open the page behind it is inert and does not scroll.
@@ -28,11 +21,18 @@ const defaults = { title: document.title, description: description?.content || '
  */
 function setMenu(open)
 {
-    const on = open && narrow.matches;
+    const on = open && narrow.get();
     if (!on && menu.contains(document.activeElement))
     {
         toggle.focus();
     }
+    menuOpen.set(on);
+}
+
+/** Shows the menu state on the static header, and makes the page behind an open menu inert. */
+effect(() =>
+{
+    const on = menuOpen.get();
     nav.dataset.open = String(on);
     toggle.setAttribute('aria-expanded', String(on));
     toggleLabel.textContent = on ? 'Close menu' : 'Open menu';
@@ -42,20 +42,22 @@ function setMenu(open)
     {
         el.inert = on;
     }
-}
+});
 
-/**
- * Marks the nav link for the current section and updates the document metadata.
- * @param {{path: string, route?: object}} to Resolved route.
- */
-function syncChrome(to)
+/** Closes the menu whenever the window crosses the mobile breakpoint. */
+effect(() =>
 {
-    const path = to?.path || location.pathname;
-    for (const a of document.querySelectorAll('[data-route]'))
+    narrow.get();
+    untracked(() => setMenu(false));
+});
+
+/** Marks the nav link for the current section. */
+for (const a of document.querySelectorAll('[data-route]'))
+{
+    const here = router.matches(a.dataset.route);
+    effect(() =>
     {
-        const base = a.dataset.route;
-        const hit = path === base || path.startsWith(`${base}/`);
-        if (hit)
+        if (here.get())
         {
             a.setAttribute('aria-current', 'page');
         }
@@ -63,52 +65,55 @@ function syncChrome(to)
         {
             a.removeAttribute('aria-current');
         }
-    }
-    const route = to?.route && routes.find((r) => r.path === to.route.path);
-    document.title = route?.title || 'Page not found | molexMedia';
-    if (description)
-    {
-        description.content = route?.description || defaults.description;
-    }
+    });
 }
 
-const router = $.router({ routes, fallback: 'not-found' });
-
-let first = true;
-router.onChange((to) =>
-{
-    syncChrome(to);
-    setMenu(false);
-    closeViewer();
-    if (!first && !location.hash)
-    {
-        requestAnimationFrame(() =>
-        {
-            const heading = document.querySelector('main h1');
-            if (heading)
-            {
-                heading.setAttribute('tabindex', '-1');
-                heading.focus({ preventScroll: true });
-            }
-        });
-    }
-    landRoute(first);
-    first = false;
-});
-
-toggle.addEventListener('click', () => setMenu(nav.dataset.open !== 'true'));
+toggle.addEventListener('click', () => setMenu(!menuOpen.get()));
 document.getElementById('nav-scrim').addEventListener('click', () => setMenu(false));
-narrow.addEventListener('change', () => setMenu(false));
-
 document.addEventListener('keydown', (e) =>
 {
-    if (e.key === 'Escape' && nav.dataset.open === 'true')
+    if (e.key === 'Escape' && menuOpen.get())
     {
         setMenu(false);
         toggle.focus();
     }
 });
 
-syncChrome(router.current);
 startSmoothScroll();
-loadReleases();
+await router.ready;
+render(router.outlet(), '#main');
+
+let first = true;
+
+/**
+ * After each navigation: the head for an address no route matches, the menu and the viewer closed, focus on the new
+ * heading, and the page landed at the top or at the anchor its URL names.
+ */
+effect(() =>
+{
+    const match = router.current.get();
+    untracked(() =>
+    {
+        if (!match)
+        {
+            document.title = NOT_FOUND.title;
+            description.content = NOT_FOUND.description;
+        }
+        setMenu(false);
+        closeViewer();
+        if (!first && !location.hash)
+        {
+            requestAnimationFrame(() =>
+            {
+                const heading = document.querySelector('main h1');
+                if (heading)
+                {
+                    heading.setAttribute('tabindex', '-1');
+                    heading.focus({ preventScroll: true });
+                }
+            });
+        }
+        landRoute(first);
+        first = false;
+    });
+});

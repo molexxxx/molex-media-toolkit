@@ -1,17 +1,19 @@
+import { computed, html } from 'zerolith';
 import { icon } from './icons.js';
 import { SCREENS } from './screens.js';
+import { openViewer } from './viewer.js';
 
 export const MINUS = '−';
 
 /**
- * Internal SPA link with a real href so it works without JavaScript and with modifier keys.
- * @param {string} path Route path.
- * @param {string} html Link content.
+ * Internal link with a real href, so it works without JavaScript and with modifier keys; the router takes plain clicks.
+ * @param {string} href Route path, usually from router.href.
+ * @param {unknown} content Link text or view.
  * @param {string} [cls] Class list.
  */
-export function link(path, html, cls = '')
+export function link(href, content, cls = '')
 {
-    return `<a href="${path}" z-link="${path}" z-to-top${cls ? ` class="${cls}"` : ''}>${html}</a>`;
+    return html`<a href=${href} class=${cls || undefined}>${content}</a>`;
 }
 
 /**
@@ -27,7 +29,7 @@ export function statusLabel(status, word)
         done: 'done', warning: 'warning', error: 'error', info: 'info',
     }[status] || 'pending';
     const spin = glyph === 'spinner' ? 'spin' : '';
-    return `<span class="status" data-status="${status}">${icon(glyph, 14, undefined, spin)}<span>${word}</span></span>`;
+    return html`<span class="status" data-status=${status}>${icon(glyph, 14, undefined, spin)}<span>${word}</span></span>`;
 }
 
 /**
@@ -38,7 +40,7 @@ export function statusLabel(status, word)
 export function stamp(outcome, values)
 {
     const verified = outcome === 'verified';
-    return `<span class="stamp" data-outcome="${outcome}">${icon(verified ? 'verified' : 'failed', 14)}<span class="word">${verified ? 'Verified' : 'Returned'}</span><span class="vals">${values}</span></span>`;
+    return html`<span class="stamp" data-outcome=${outcome}>${icon(verified ? 'verified' : 'failed', 14)}<span class="word">${verified ? 'Verified' : 'Returned'}</span><span class="vals">${values}</span></span>`;
 }
 
 /**
@@ -57,15 +59,10 @@ export function screenshot(name, { alt, caption, sizes, priority = false, cls = 
 {
     const s = SCREENS[name];
     const set = (stem, widths, ext) => widths.map((w) => `assets/screens/${stem}-${w}.${ext} ${w}w`).join(', ');
-    const phone = (ext) => `<source media="(max-width: 760px)" type="image/${ext}" srcset="${set(`${name}-phone`, s.phone.widths, ext)}" sizes="calc(100vw - 32px)" width="${s.phone.width}" height="${s.phone.height}">`;
-    const full = (ext) => `<source type="image/${ext}" srcset="${set(name, s.widths, ext)}" sizes="${sizes}">`;
+    const phone = (ext) => html`<source media="(max-width: 760px)" type=${`image/${ext}`} srcset=${set(`${name}-phone`, s.phone.widths, ext)} sizes="calc(100vw - 32px)" width=${s.phone.width} height=${s.phone.height}>`;
+    const full = (ext) => html`<source type=${`image/${ext}`} srcset=${set(name, s.widths, ext)} sizes=${sizes}>`;
     const fallback = s.widths.find((w) => w >= 1280) ?? s.width;
-    const load = priority ? 'fetchpriority="high"' : 'loading="lazy"';
-    return `<figure class="shot${cls ? ` ${cls}` : ''}" data-shot="${name}"><button type="button" class="shot-open">`
-        + `<span class="sr">Enlarge screenshot: </span><picture>${phone('avif')}${phone('webp')}${full('avif')}${full('webp')}`
-        + `<img src="assets/screens/${name}-${fallback}.webp" width="${s.width}" height="${s.height}" alt="${alt}" ${load} decoding="async"></picture>`
-        + `<span class="shot-chip" aria-hidden="true">${icon('maximize', 14)}Enlarge</span></button>`
-        + `<figcaption>${caption}</figcaption></figure>`;
+    return html`<figure class=${cls ? `shot ${cls}` : 'shot'} data-shot=${name}><button type="button" class="shot-open" @click=${openViewer}><span class="sr">Enlarge screenshot: </span><picture>${phone('avif')}${phone('webp')}${full('avif')}${full('webp')}<img src=${`assets/screens/${name}-${fallback}.webp`} width=${s.width} height=${s.height} alt=${alt} fetchpriority=${priority ? 'high' : undefined} loading=${priority ? undefined : 'lazy'} decoding="async"></picture><span class="shot-chip" aria-hidden="true">${icon('maximize', 14)}Enlarge</span></button><figcaption>${caption}</figcaption></figure>`;
 }
 
 const FOOTAGE = 'Video: Big Buck Bunny, Blender Foundation, CC BY 3.0.';
@@ -99,10 +96,20 @@ export function playerShot(sizes)
 /**
  * Error or notice block with optional actions.
  * @param {string} title Bold first line.
- * @param {string} body Explanation.
- * @param {string} [actions] Action markup.
+ * @param {string|import('zerolith').ReadableSignal<string>} body Explanation.
+ * @param {unknown} [actions] Action buttons and links.
  */
-export function notice(title, body, actions = '')
+export function notice(title, body, actions)
 {
-    return `<div class="state" data-kind="error" role="status">${icon('alert', 18)}<div><strong>${title}</strong> ${body}${actions ? `<div class="state-actions">${actions}</div>` : ''}</div></div>`;
+    const text = typeof body === 'string' ? ` ${body}` : computed(() => ` ${body.get()}`);
+    return html`<div class="state" data-kind="error" role="status">${icon('alert', 18)}<div><strong>${title}</strong>${text}${actions ? html`<div class="state-actions">${actions}</div>` : null}</div></div>`;
+}
+
+/**
+ * A loading placeholder bar of a given width.
+ * @param {string} width CSS width, such as 26ch.
+ */
+export function skeleton(width)
+{
+    return html`<span class="skel" style=${`--w:${width}`}></span>`;
 }
