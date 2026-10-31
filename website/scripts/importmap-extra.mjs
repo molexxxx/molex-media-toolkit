@@ -1,11 +1,11 @@
 /**
- * Adds the first-party packages that `zerolith importmap` does not vendor to the import map it wrote.
- * The command copies zerolith, @zerolith/router, forms, client, and devtools only, so @zerolith/a11y is
- * copied here the same way: its modules under vendor/, an entry and integrity hashes in vendor/importmap.json
- * and in the page, and a preload link per module. Run it after `zerolith importmap --html index.html`.
+ * Finishes what `zerolith importmap --html index.html` writes; run it after the command.
+ * The command copies zerolith, @zerolith/router, forms, client, and devtools only, so @zerolith/a11y is copied here
+ * the same way: its modules under vendor/, with an entry and integrity hashes in vendor/importmap.json and in the
+ * page. The page's preload links are then rewritten to cover exactly the modules the page loads.
  */
 import { createHash } from 'node:crypto';
-import { copyFileSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, posix } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -85,6 +85,36 @@ map.imports = sorted(map.imports);
 map.integrity = sorted(map.integrity);
 writeFileSync(MAP_FILE, `${JSON.stringify(map, null, 2)}\n`);
 
+/**
+ * The modules the page loads: its module scripts and everything they import statically, with bare specifiers resolved
+ * through the import map. The command preloads every module of every mapped package instead, server-only entries
+ * included, and none of the application's own, which the browser would otherwise find one import at a time.
+ * @param {string} html
+ * @param {{ imports: Record<string, string> }} importMap
+ * @returns {string[]} Root-relative URLs, sorted.
+ */
+function pageModules(html, importMap)
+{
+    const base = html.match(/<base href="([^"]*)"/)?.[1] ?? '/';
+    const queue = [...html.matchAll(/<script type="module" src="([^"]+)"/g)].map(([, src]) => new URL(src, `http://site${base}`).pathname);
+    const seen = new Set();
+    while (queue.length)
+    {
+        const url = queue.pop();
+        if (seen.has(url) || !existsSync(join(ROOT, url)))
+        {
+            continue;
+        }
+        seen.add(url);
+        const source = readFileSync(join(ROOT, url), 'utf8');
+        for (const [, specifier] of source.matchAll(/^\s*(?:import|export)\s*(?:[\w*{}\s,$]*?\s*from\s*)?["']([^"']+)["']/gm))
+        {
+            queue.push(importMap.imports[specifier] ?? new URL(specifier, `http://site${url}`).pathname);
+        }
+    }
+    return [...seen].sort();
+}
+
 const html = readFileSync(PAGE, 'utf8');
 const newline = html.includes('\r\n') ? '\r\n' : '\n';
 const lines = html.split(/\r?\n/).filter((line) => !(line.includes('rel="modulepreload"') && line.includes('data-zerolith-preload')));
@@ -94,7 +124,8 @@ if (at === -1)
     throw new Error('index.html has no import map; run `zerolith importmap --html index.html` first.');
 }
 lines[at] = lines[at].replace(/<script type="importmap">.*?<\/script>/, `<script type="importmap">${JSON.stringify(map)}</script>`);
-const preloads = Object.entries(map.integrity).map(([url, hash]) => `<link rel="modulepreload" href="${url}" integrity="${hash}" data-zerolith-preload>`);
+const modules = pageModules(html, map);
+const preloads = modules.map((url) => `<link rel="modulepreload" href="${url}"${map.integrity[url] ? ` integrity="${map.integrity[url]}"` : ''} data-zerolith-preload>`);
 lines.splice(at + 1, 0, ...preloads);
 writeFileSync(PAGE, lines.join(newline));
-console.log(`vendored ${PACKAGES.join(', ')} into vendor and the import map`);
+console.log(`vendored ${PACKAGES.join(', ')} into vendor and preloaded the ${modules.length} modules the page loads`);
