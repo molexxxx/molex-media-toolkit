@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "zerolith dev --port 3100",
+    "importmap": "zerolith importmap --html index.html && node scripts/importmap-extra.mjs",
     "doctor": "zerolith doctor"
   },
   "dependencies": {

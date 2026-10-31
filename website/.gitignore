@@ -1,0 +1,2 @@
+# The root ignores every dist/ folder; the vendored packages keep theirs under vendor/.
+!/vendor/**/dist/

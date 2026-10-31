@@ -1,0 +1,2 @@
+# The import map pins these files by integrity hash, so their line endings must stay as published.
+vendor/** -text
