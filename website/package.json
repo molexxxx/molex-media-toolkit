@@ -1,1 +1,17 @@
-{ "type": "module" }
+{
+  "name": "molex-media-website",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "zerolith dev --port 3100",
+    "doctor": "zerolith doctor"
+  },
+  "dependencies": {
+    "@zerolith/a11y": "0.1.0-alpha.4",
+    "@zerolith/router": "0.1.0-alpha.4",
+    "zerolith": "0.1.0-alpha.4"
+  },
+  "devDependencies": {
+    "@zerolith/cli": "0.1.0-alpha.4"
+  }
+}
