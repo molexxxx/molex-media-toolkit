@@ -13,6 +13,7 @@
     "zerolith": "0.1.0-alpha.4"
   },
   "devDependencies": {
-    "@zerolith/cli": "0.1.0-alpha.4"
+    "@zerolith/cli": "0.1.0-alpha.4",
+    "lighthouse": "13.5.0"
   }
 }
