@@ -1,7 +1,7 @@
 import { effect } from 'zerolith';
 import { createRouter } from '@zerolith/router';
 import { NotFound } from './components/not-found.js';
-import { routes } from './routes.js';
+import { NOT_FOUND, routes } from './routes.js';
 import { scrollPage } from './smooth.js';
 
 /** The path and query of the page on screen. */
@@ -52,7 +52,11 @@ document.addEventListener('click', onSamePageLink, true);
  * Scrolling stays with app/smooth.js, which lands each route through the smooth scroller.
  * @type {import('@zerolith/router').Router<typeof routes>}
  */
-export const router = createRouter(routes, { fallback: () => NotFound(), scroll: false });
+export const router = createRouter(routes, {
+    fallback: () => NotFound(),
+    head: ({ name }) => (name === undefined ? NOT_FOUND : {}),
+    scroll: false,
+});
 
 effect(() =>
 {

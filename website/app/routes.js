@@ -9,7 +9,7 @@ import { Player } from './components/player.js';
 
 const HOME_DESCRIPTION = 'molexMedia is a free desktop app for Windows, macOS, and Linux. It normalizes, converts, and compresses batches of media to named standards, trims and edits on a timeline, and plays files and links, all on FFmpeg.';
 
-/** The head for an address no route matches; the router applies a head only for matched routes. */
+/** The head for an address no route matches, given to the router as the fallback's head. */
 export const NOT_FOUND = { title: 'Page not found | molexMedia', description: HOME_DESCRIPTION };
 
 export const routes = defineRoutes({

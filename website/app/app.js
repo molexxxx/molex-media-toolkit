@@ -1,7 +1,6 @@
 import { effect, render, signal, untracked } from 'zerolith';
 import { mediaQuery } from '@zerolith/a11y';
 import { router } from './router.js';
-import { NOT_FOUND } from './routes.js';
 import { startSmoothScroll, landRoute, holdScroll } from './smooth.js';
 import { closeViewer } from './viewer.js';
 
@@ -9,7 +8,6 @@ const nav = document.getElementById('nav');
 const toggle = document.getElementById('nav-toggle');
 const toggleLabel = toggle.querySelector('.sr');
 const menu = document.getElementById('nav-links');
-const description = document.querySelector('meta[name="description"]');
 const narrow = mediaQuery('(max-width: 760px)');
 
 /** Whether the mobile menu is open. */
@@ -86,19 +84,14 @@ render(router.outlet(), '#main');
 let first = true;
 
 /**
- * After each navigation: the head for an address no route matches, the menu and the viewer closed, focus on the new
- * heading, and the page landed at the top or at the anchor its URL names.
+ * After each navigation: the menu and the viewer closed, focus on the new heading, and the page landed at the top or
+ * at the anchor its URL names.
  */
 effect(() =>
 {
-    const match = router.current.get();
+    router.current.get();
     untracked(() =>
     {
-        if (!match)
-        {
-            document.title = NOT_FOUND.title;
-            description.content = NOT_FOUND.description;
-        }
         setMenu(false);
         closeViewer();
         if (!first && !location.hash)
