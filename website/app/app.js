@@ -42,11 +42,19 @@ effect(() =>
     }
 });
 
-/** Closes the menu whenever the window crosses the mobile breakpoint. */
+/**
+ * Closes the menu whenever the window crosses the mobile breakpoint. The nav is marked for the frames around the
+ * switch so the hidden dropdown takes its closed state at once instead of fading out from the desktop links.
+ */
 effect(() =>
 {
     narrow.get();
-    untracked(() => setMenu(false));
+    untracked(() =>
+    {
+        nav.dataset.snap = '';
+        setMenu(false);
+        requestAnimationFrame(() => requestAnimationFrame(() => delete nav.dataset.snap));
+    });
 });
 
 /** Marks the nav link for the current section. */

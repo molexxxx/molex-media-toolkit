@@ -2155,6 +2155,13 @@ html:has(dialog[open])
         transition: opacity var(--move) var(--ease-out), visibility 0s;
     }
 
+    .nav[data-snap] .nav-links,
+    .nav[data-snap] .nav-links a,
+    .nav[data-snap] + .nav-scrim
+    {
+        transition: none;
+    }
+
     .nav-links a
     {
         height: 48px;
