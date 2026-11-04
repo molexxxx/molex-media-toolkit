@@ -1,0 +1,1 @@
+{"version":3,"file":"version.js","sources":["../../src/version.ts"],"sourcesContent":["/** The version of this zerolith, which the packages released with it compare with their own. */\nexport const version: string = \"0.1.0-alpha.10\";\n"],"names":[],"mappings":"AACA,OAAO,MAAM,QAAkB"}

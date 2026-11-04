@@ -1,21 +1,2 @@
-export function trackNode(_node, _kind, _name, _inspect) {
-}
-export function trackRoot(_root, _container, _kind) {
-}
-export function untrackRoot(_root) {
-}
-export function trackDiagnostic(_record) {
-}
-export function trackFlush(_effects) {
-}
-export function saveRestore(_state) {
-}
-export function isInternal() {
-    return false;
-}
-export function internal(fn) {
-    return fn();
-}
-export function measure(_track, _name, fn) {
-    return fn();
-}
+export function trackNode(e,t,n,r){}export function trackRoot(e,t,n){}export function untrackRoot(e){}export function trackDiagnostic(e){}export function printUnheard(e){}export function trackFlush(e){}export function saveRestore(e){}export function isInternal(){return!1}export function internal(e){return e()}export function measure(e,t,n){return n()}export function measureRun(e,t,n){n.run()}
+//# sourceMappingURL=devtools.js.map

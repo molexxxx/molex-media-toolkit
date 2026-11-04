@@ -1,0 +1,2 @@
+# Written by zerolith importmap. The vendored packages keep their dist/ folders in commits, whatever the project's own rules say.
+!**/dist/

@@ -1,0 +1,2 @@
+import{escapeAttribute as e,escapeText as t}from"zerolith/ssr";export function renderHead(n){let r=[];return n.title!==void 0&&r.push(`<title>${t(n.title)}</title>`),n.description!==void 0&&r.push(`<meta name="description" content="${e(n.description)}">`),r.join(``)}export function renderRouteState(e){let t=e.current.get();if(t===void 0||t.data===void 0)return``;let n={name:t.name,href:t.url.pathname+t.url.search,data:t.data};return`<script type="application/json" data-zerolith-route>${JSON.stringify(n).replace(/</g,`\\u003c`)}<\/script>`}
+//# sourceMappingURL=server.js.map

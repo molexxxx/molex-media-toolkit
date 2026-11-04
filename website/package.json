@@ -4,17 +4,17 @@
   "type": "module",
   "scripts": {
     "dev": "zerolith dev --port 3100",
-    "importmap": "zerolith importmap --html index.html && node scripts/importmap-extra.mjs",
+    "importmap": "zerolith importmap --html index.html",
     "doctor": "zerolith doctor",
     "lighthouse": "node scripts/lighthouse/run.mjs"
   },
   "dependencies": {
-    "@zerolith/a11y": "0.1.0-alpha.4",
-    "@zerolith/router": "0.1.0-alpha.4",
-    "zerolith": "0.1.0-alpha.4"
+    "@zerolith/a11y": "0.1.0-alpha.10",
+    "@zerolith/router": "0.1.0-alpha.10",
+    "zerolith": "0.1.0-alpha.10"
   },
   "devDependencies": {
-    "@zerolith/cli": "0.1.0-alpha.4",
+    "@zerolith/cli": "0.1.0-alpha.10",
     "lighthouse": "13.5.0"
   }
 }

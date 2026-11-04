@@ -1,0 +1,2 @@
+import{signal as e}from"zerolith";const t=new Map;export function mediaQuery(n){let r=t.get(n);if(r===void 0){if(typeof matchMedia>`u`)r=e(!1);else{let t=matchMedia(n),i=e(t.matches);t.addEventListener(`change`,e=>i.set(e.matches)),r=i}t.set(n,r)}return r}export function forcedColors(){return mediaQuery(`(forced-colors: active)`)}export function reducedMotion(){return mediaQuery(`(prefers-reduced-motion: reduce)`)}
+//# sourceMappingURL=media.js.map
