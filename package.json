@@ -43,7 +43,7 @@
     "@vitejs/plugin-react": "^5.2.0",
     "@vitest/coverage-v8": "^5.0.5",
     "autoprefixer": "^10.6.2",
-    "electron": "^45.1.0",
+    "electron": "^45.2.3",
     "electron-builder": "^26.18.0",
     "electron-vite": "^6.0.0",
     "framer-motion": "^14.9.0",
