@@ -31,7 +31,7 @@ const EXPECTED: Record<IconName, string> = {
   'status.paused': 'CirclePause',
   'status.done': 'CircleCheck',
   'status.verified': 'BadgeCheck',
-  'status.warning': 'TriangleAlert',
+  'status.warning': 'TriangleExclamationPoint',
   'status.failed': 'OctagonX',
   'status.canceled': 'Ban',
   'status.skipped': 'SkipForward',
@@ -115,7 +115,7 @@ const EXPECTED: Record<IconName, string> = {
   'player.volumeLow': 'Volume1',
   'player.muted': 'VolumeX',
   'player.popout': 'PictureInPicture2',
-  'player.returnToApp': 'SquareArrowOutDownLeft',
+  'player.returnToApp': 'SquareArrowDownLeftExit',
   'player.addLink': 'Link',
   'player.playlist': 'ListMusic',
   'player.visualization': 'AudioWaveform',
@@ -212,6 +212,10 @@ describe('icon registry', () =>
     }
     expect(declared.has('History')).toBe(false)
     expect(lucideExport('History')?.displayName).toBe('RotateCcwClock')
+    expect(declared.has('TriangleAlert')).toBe(false)
+    expect(lucideExport('TriangleAlert')?.displayName).toBe('TriangleExclamationPoint')
+    expect(declared.has('SquareArrowOutDownLeft')).toBe(false)
+    expect(lucideExport('SquareArrowOutDownLeft')?.displayName).toBe('SquareArrowDownLeftExit')
   })
 
   it('resolves the batch page keys, with the history tab on RotateCcwClock', () =>
