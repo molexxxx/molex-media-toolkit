@@ -1,11 +1,15 @@
-# -----------------------------------------------------
-# Auto-merge - Merge passing Dependabot PRs automatically
-# -----------------------------------------------------
+# Auto-merge: squash-merges a Dependabot pull request once the CI workflow
+# has passed on its head commit. main has no required status checks, so
+# GitHub's own auto-merge (`gh pr merge --auto`) merges at once, whatever CI
+# says afterward: lucide-react 1.70.0 (#247) merged that way on 2026-11-09
+# while its tests were failing, and left main red. This workflow runs when
+# CI finishes instead, and merges only a run that succeeded.
 name: Auto-merge Dependabot
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
 
 permissions:
   contents: write
@@ -13,22 +17,39 @@ permissions:
 
 jobs:
   auto-merge:
-    if: github.event.pull_request.user.login == 'dependabot[bot]'
+    if: >-
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.actor.login == 'dependabot[bot]'
     runs-on: ubuntu-latest
     steps:
-      # Retried because parallel Dependabot merges move main underneath this
-      # call, which GitHub rejects with "Base branch was modified".
-      - name: Enable auto-merge
+      # The pull request is found by the run's branch, and has to be open,
+      # Dependabot's, and still at the commit CI checked, so a commit pushed
+      # after the run started is never merged on that run's result. The
+      # merge is retried because parallel Dependabot merges move main
+      # underneath this call, which GitHub rejects with "Base branch was
+      # modified".
+      - name: Merge the pull request CI passed on
         run: |
+          number=$(gh pr list --repo "$REPO" --head "$HEAD_BRANCH" --state open \
+            --json number,headRefOid,author \
+            --jq ".[] | select(.headRefOid == \"$HEAD_SHA\" and .author.login == \"app/dependabot\") | .number" \
+            | head -n 1)
+          if [ -z "$number" ]; then
+            echo "No open Dependabot pull request at $HEAD_SHA on $HEAD_BRANCH; nothing to merge."
+            exit 0
+          fi
           for attempt in 1 2 3 4 5; do
-            if gh pr merge --auto --squash "$PR_URL"; then
+            if gh pr merge --repo "$REPO" --squash --match-head-commit "$HEAD_SHA" "$number"; then
               exit 0
             fi
             echo "Attempt $attempt failed; retrying in $((attempt * 15))s"
             sleep $((attempt * 15))
           done
-          echo "::error::Could not enable auto-merge after 5 attempts"
+          echo "::error::Could not merge #$number after 5 attempts"
           exit 1
         env:
-          PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
