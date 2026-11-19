@@ -6,6 +6,9 @@ const settleMs = Number(process.env.STACK_PROBE_SETTLE_MS ?? 150_000)
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
+// A frame prints as exactly one line: the Actions log runs any line that starts with `::` as a workflow command.
+const singleLine = (text) => text.replace(/[\r\n]/g, '')
+
 async function targets()
 {
   try
@@ -61,7 +64,7 @@ socket.onmessage = (event) =>
   if (message.method === 'Debugger.paused')
   {
     const frames = message.params.callFrames.slice(0, 30).map((frame) =>
-      `${frame.functionName || '(anonymous)'}  ${frame.url.replace(/^file:\/\/\//, '')}:${frame.location.lineNumber + 1}:${frame.location.columnNumber + 1}`)
+      singleLine(`${frame.functionName || '(anonymous)'}  ${frame.url.replace(/^file:\/\/\//, '')}:${frame.location.lineNumber + 1}:${frame.location.columnNumber + 1}`))
     console.log(`--- paused ${new Date().toISOString()}\n${frames.join('\n')}`)
     void send('Debugger.resume')
   }

@@ -19,6 +19,9 @@ on:
         default: windows-2025
         required: true
 
+permissions:
+  contents: read
+
 jobs:
   probe:
     runs-on: ${{ inputs.runner || 'windows-2025' }}
@@ -72,9 +75,11 @@ jobs:
 
       - name: Run the file with the inspector open
         timeout-minutes: 7
+        env:
+          GOLDEN_FILE: ${{ inputs.file || 'tests/golden/engine.golden.ts' }}
         run: |
           node .github/scripts/stack-probe.mjs > "$RUNNER_TEMP/stack.log" 2>&1 &
-          npm run test:golden -- --reporter=verbose --inspect=127.0.0.1:9229 "${{ inputs.file || 'tests/golden/engine.golden.ts' }}"
+          npm run test:golden -- --reporter=verbose --inspect=127.0.0.1:9229 "$GOLDEN_FILE"
 
       - name: Stacks and watchdog log
         if: always()

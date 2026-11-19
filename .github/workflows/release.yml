@@ -20,6 +20,8 @@ jobs:
   test:
     name: Test & Type Check
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v7
 
@@ -382,6 +384,7 @@ jobs:
     needs: [publish]
     if: always()
     runs-on: ubuntu-24.04
+    permissions: {}
     steps:
       - name: Dispatch refresh-badges
         env:
