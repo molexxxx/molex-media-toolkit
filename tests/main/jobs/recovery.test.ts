@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, statSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { mkdtemp, rm, stat } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { basename, join } from 'node:path'
@@ -1079,16 +1079,16 @@ describe('recoverEngine', () =>
 function tree(dir: string, prefix = ''): string[]
 {
   const out: string[] = []
-  for (const name of readdirSync(dir).sort())
+  for (const entry of readdirSync(dir, { withFileTypes: true }).sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0)))
   {
-    const path = join(dir, name)
-    if (statSync(path).isDirectory())
+    const path = join(dir, entry.name)
+    if (entry.isDirectory())
     {
-      out.push(...tree(path, `${prefix}${name}/`))
+      out.push(...tree(path, `${prefix}${entry.name}/`))
     }
     else
     {
-      out.push(`${prefix}${name}=${readFileSync(path, 'utf8')}`)
+      out.push(`${prefix}${entry.name}=${readFileSync(path, 'utf8')}`)
     }
   }
   return out

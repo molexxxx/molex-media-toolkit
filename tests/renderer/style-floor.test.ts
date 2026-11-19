@@ -248,6 +248,9 @@ function quotedLiteral(source: string): string | null
   return m ? (m[1] ?? m[2] ?? m[3]) : null
 }
 
+/** A `const` bound to a quoted or interpolation-free template literal: the name, then the literal. */
+const CONST_STRING = /\bconst\s+([A-Za-z_$][\w$]*)\s*=\s*('[^'\n]*'|"[^"\n]*"|`[^`$]*`)/
+
 /** Canvas font assignments whose size is below the floor or cannot be read from the source. */
 function smallCanvasFonts(text: string): Hit[]
 {
@@ -258,8 +261,8 @@ function smallCanvasFonts(text: string): Hit[]
     let literal = quotedLiteral(rhs)
     if (literal === null && /^[A-Za-z_$][\w$]*$/.test(rhs))
     {
-      const decl = new RegExp(`\\bconst\\s+${rhs.replace(/\$/g, '\\$')}\\s*=\\s*('[^'\\n]*'|"[^"\\n]*"|\`[^\`$]*\`)`).exec(text)
-      literal = decl ? quotedLiteral(decl[1]) : null
+      const decl = [...matches(text, CONST_STRING)].find((d) => d[1] === rhs)
+      literal = decl ? quotedLiteral(decl[2]) : null
     }
     const sizes = literal === null ? [] : [...matches(literal, /(\d*\.?\d+)px\b/)].map((s) => parseFloat(s[1]))
     if (literal === null || sizes.length === 0 || sizes.some((px) => px < MIN_TEXT_PX))
