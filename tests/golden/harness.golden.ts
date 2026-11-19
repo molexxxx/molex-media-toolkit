@@ -8,6 +8,7 @@ import { annex3Combine, annex3Weight, createOracle, LAYOUT_CHANNELS, parseAstats
 import { channelTruePeak, deinterleave, phaseFilters, toDb, truePeakDb, TRUE_PEAK_TAPS } from './truepeak'
 import { band, decodeAnalysis, fft, imd, smpteSource, spectrum, thd } from './distortion'
 import { buildIdOf, goldenRoot, resolveBinaries, runFolderName, SKIP_MESSAGE, STALE_RUN_MS, sweepStaleRuns } from './global-setup'
+import { goldenRootFor } from './root.mjs'
 import { readFile } from 'node:fs/promises'
 
 const golden = inject('golden')
@@ -237,9 +238,20 @@ describe('golden setup', () =>
   it('keeps outputs out of the repository and names build folders safely', () =>
   {
     expect(() => goldenRoot({ MOLEX_GOLDEN_OUT: resolve('tests/golden/out') })).toThrow('outside the repository')
-    expect(goldenRoot({})).toBe(resolve(join(tmpdir(), 'molex-golden')))
+    expect(goldenRoot({})).toBe(goldenRootFor({}))
     expect(buildIdOf('n9.0.2-17-g2a571b6068-20260930')).toBe('n9.0.2-17-g2a571b6068-20260930')
     expect(buildIdOf('4.4.2-0ubuntu0.22.04.1 (x)')).toBe('4.4.2-0ubuntu0.22.04.1_x_')
+  })
+
+  it('keeps the golden root in the per-user cache folder, never the shared temp folder', () =>
+  {
+    expect(goldenRootFor({ LOCALAPPDATA: 'D:\\Profiles\\a\\Local' }, 'win32', 'C:\\Users\\a')).toBe('D:\\Profiles\\a\\Local\\molex-golden')
+    expect(goldenRootFor({ LOCALAPPDATA: 'Local' }, 'win32', 'C:\\Users\\a')).toBe('C:\\Users\\a\\AppData\\Local\\molex-golden')
+    expect(goldenRootFor({ XDG_CACHE_HOME: '/srv/cache' }, 'darwin', '/Users/a')).toBe('/Users/a/Library/Caches/molex-golden')
+    expect(goldenRootFor({ XDG_CACHE_HOME: '/srv/cache' }, 'linux', '/home/a')).toBe('/srv/cache/molex-golden')
+    expect(goldenRootFor({ XDG_CACHE_HOME: 'cache' }, 'linux', '/home/a')).toBe('/home/a/.cache/molex-golden')
+    expect(goldenRootFor({}, 'linux', '/home/a')).toBe('/home/a/.cache/molex-golden')
+    expect(goldenRootFor({ MOLEX_GOLDEN_OUT: ' /ci/golden ' }, 'linux', '/home/a')).toBe(resolve('/ci/golden'))
   })
 
   it('gives each run its own short output folder and sweeps only stale ones', async () =>
@@ -279,7 +291,7 @@ describe.skipIf(Boolean(golden.skip))('golden corpus', () =>
 
   it('lives under the golden root of this build, outside the repository', () =>
   {
-    const root = resolve(process.env.MOLEX_GOLDEN_OUT?.trim() || join(tmpdir(), 'molex-golden'))
+    const root = goldenRootFor(process.env)
     expect(golden.corpusDir.startsWith(join(root, golden.buildId))).toBe(true)
     const rel = relative(resolve('.'), golden.corpusDir)
     expect(rel.startsWith('..') || isAbsolute(rel)).toBe(true)

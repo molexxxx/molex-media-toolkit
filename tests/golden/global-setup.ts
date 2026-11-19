@@ -5,7 +5,6 @@
  */
 import { existsSync } from 'node:fs'
 import { mkdir, readdir, rm, stat, writeFile } from 'node:fs/promises'
-import { tmpdir } from 'node:os'
 import { isAbsolute, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { TestProject } from 'vitest/node'
@@ -15,6 +14,7 @@ import { SELF_TESTS, executableName, meetsMinimum, minimumMessage, parseEncoders
 import type { SelfTestId } from '../../src/main/ffmpeg/build'
 import { buildCorpus } from './corpus'
 import { loudnessArgs, readLoudness, runTool } from './oracle'
+import { goldenRootFor } from './root.mjs'
 
 /** The skip reason when no build is found. */
 export const SKIP_MESSAGE = 'No FFmpeg: set MOLEX_FFMPEG_DIR or put ffmpeg and ffprobe on PATH'
@@ -39,7 +39,7 @@ export interface GoldenInfo
   /** The refusal a build below FFmpeg 5.1 gets, or null. */
   minimumMessage: string | null
   selfTest: Record<SelfTestId, boolean>
-  /** The golden root: MOLEX_GOLDEN_OUT or `<os.tmpdir()>/molex-golden`. */
+  /** The golden root: MOLEX_GOLDEN_OUT or `molex-golden` in the user's cache folder. */
   root: string
   /** `<root>/<buildId>`. */
   dir: string
@@ -166,7 +166,7 @@ export async function sweepStaleRuns(outRoot: string, before: number): Promise<s
 /** The golden root; refuses a folder inside the repository, which packaging would sweep up. */
 export function goldenRoot(env: NodeJS.ProcessEnv, repo = REPO): string
 {
-  const root = resolve(env.MOLEX_GOLDEN_OUT?.trim() || join(tmpdir(), 'molex-golden'))
+  const root = goldenRootFor(env)
   const rel = relative(repo, root)
   if (rel === '' || (!rel.startsWith('..') && !isAbsolute(rel))) throw new Error(`Golden outputs must live outside the repository: ${root}`)
   return root

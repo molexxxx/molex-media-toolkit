@@ -1,5 +1,5 @@
 /**
- * Downloads the pinned FFmpeg build for this platform into a temp folder, checks every asset's size and SHA-256
+ * Downloads the pinned FFmpeg build for this platform into the golden root, checks every asset's size and SHA-256
  * while it streams, extracts it under the same entry rules as the app's zip extractor, and prints the folder
  * holding ffmpeg and ffprobe once both answer -version. Everything but that folder goes to stderr, so
  * `MOLEX_FFMPEG_DIR=$(node tests/golden/fetch-ffmpeg.mjs)` works in a shell.
@@ -8,10 +8,10 @@ import { spawnSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { chmodSync, createWriteStream, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { once } from 'node:events'
-import { tmpdir } from 'node:os'
 import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import yauzl from 'yauzl'
+import { goldenRootFor } from './root.mjs'
 
 const PIN_FILE = new URL('../../src/main/ffmpeg/pinned-builds.json', import.meta.url)
 const SHA256 = /^[0-9a-f]{64}$/
@@ -292,27 +292,45 @@ async function install(assets, dest)
   return bin
 }
 
+/** The record a verified install left at `marker`, or null when there is none or it does not parse. */
+function readMarker(marker)
+{
+  try
+  {
+    return JSON.parse(readFileSync(marker, 'utf8'))
+  }
+  catch
+  {
+    return null
+  }
+}
+
+/** True when `path` is a string naming a folder strictly inside `dir`. */
+function isInside(dir, path)
+{
+  if (typeof path !== 'string') return false
+  const rel = relative(dir, path)
+  return rel !== '' && !rel.startsWith('..') && !isAbsolute(rel)
+}
+
 /** Fetches or reuses the pinned build and returns its bin folder. */
 export async function fetchPinned(env = process.env)
 {
   const pin = JSON.parse(readFileSync(PIN_FILE, 'utf8'))
   const sets = selectAssets(pin, process.platform, process.arch)
   if (!sets || (sets.primary.length === 0 && sets.fallback.length === 0)) throw new Error(`The pin has no build for ${process.platform}-${process.arch}`)
-  const root = resolve(env.MOLEX_GOLDEN_OUT?.trim() || join(tmpdir(), 'molex-golden'), 'ffmpeg')
+  const root = join(goldenRootFor(env), 'ffmpeg')
   for (const assets of [sets.primary, sets.fallback])
   {
     if (assets.length === 0) continue
     const dest = join(root, assets[0].build)
     const marker = join(dest, 'verified.json')
     const digests = assets.map((a) => a.sha256)
-    if (existsSync(marker))
+    const seen = readMarker(marker)
+    if (seen && JSON.stringify(seen.sha256) === JSON.stringify(digests) && isInside(dest, seen.bin) && existsSync(seen.bin) && answersVersion(seen.bin))
     {
-      const seen = JSON.parse(readFileSync(marker, 'utf8'))
-      if (JSON.stringify(seen.sha256) === JSON.stringify(digests) && seen.bin && existsSync(seen.bin) && answersVersion(seen.bin))
-      {
-        log(`Reusing ${seen.bin}`)
-        return seen.bin
-      }
+      log(`Reusing ${seen.bin}`)
+      return seen.bin
     }
     try
     {
