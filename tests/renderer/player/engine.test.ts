@@ -161,6 +161,15 @@ describe('subtitles', () =>
     expect(plainCueText('<v Bob>Hello <b>there</b>&nbsp;&lt;3</v>\n\n ')).toBe('Hello there <3')
   })
 
+  it('reads tags as the WebVTT tokenizer does and keeps escaped markup as text', () =>
+  {
+    expect(plainCueText('Hello <i')).toBe('Hello')
+    expect(plainCueText('<c.a<b>x</c>')).toBe('x')
+    expect(plainCueText('a > b')).toBe('a > b')
+    expect(plainCueText('&lt;b&gt;bold&lt;/b&gt;')).toBe('<b>bold</b>')
+    expect(plainCueText('&amp;lt;')).toBe('&lt;')
+  })
+
   it('parses cues in order and finds the ones showing at a moment', () =>
   {
     const cues = parseVtt(vtt)

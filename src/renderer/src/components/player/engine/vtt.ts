@@ -25,11 +25,29 @@ export function parseVttTime(text: string): number | null
 
 const ENTITIES: Readonly<Record<string, string>> = { '&amp;': '&', '&lt;': '<', '&gt;': '>', '&nbsp;': ' ', '&lrm;': '', '&rlm;': '' }
 
+/** `text` without its WebVTT tags; as the cue text tokenizer reads them, a tag runs from `<` to the next `>` or the end. */
+function withoutTags(text: string): string
+{
+  let plain = ''
+  let at = 0
+  while (at < text.length)
+  {
+    const open = text.indexOf('<', at)
+    if (open < 0)
+    {
+      return plain + text.slice(at)
+    }
+    plain += text.slice(at, open)
+    const close = text.indexOf('>', open + 1)
+    at = close < 0 ? text.length : close + 1
+  }
+  return plain
+}
+
 /** Cue text without WebVTT tags (italics, voices, classes, timestamps) and with its entities decoded. */
 export function plainCueText(text: string): string
 {
-  return text
-    .replace(/<[^>]*>/g, '')
+  return withoutTags(text)
     .replace(/&(?:amp|lt|gt|nbsp|lrm|rlm);/g, (entity) => ENTITIES[entity] ?? entity)
     .split('\n')
     .map((line) => line.trim())
