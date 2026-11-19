@@ -28,7 +28,9 @@ jobs:
       # after the run started is never merged on that run's result. The
       # merge is retried because parallel Dependabot merges move main
       # underneath this call, which GitHub rejects with "Base branch was
-      # modified".
+      # modified". GitHub's automatic head branch deletion does not run for
+      # merges made with this token, and Dependabot's own cleanup misses
+      # branches when several merge together, so the step deletes the branch.
       - name: Merge the pull request CI passed on
         run: |
           number=$(gh pr list --repo "$REPO" --head "$HEAD_BRANCH" --state open \
@@ -41,6 +43,10 @@ jobs:
           fi
           for attempt in 1 2 3 4 5; do
             if gh pr merge --repo "$REPO" --squash --match-head-commit "$HEAD_SHA" "$number"; then
+              if ! out=$(gh api -X DELETE "repos/$REPO/git/refs/heads/$HEAD_BRANCH" 2>&1) \
+                && ! grep -q "Reference does not exist" <<<"$out"; then
+                echo "::warning::Merged #$number but could not delete $HEAD_BRANCH: $out"
+              fi
               exit 0
             fi
             echo "Attempt $attempt failed; retrying in $((attempt * 15))s"
