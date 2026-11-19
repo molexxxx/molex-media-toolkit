@@ -80,6 +80,29 @@ const LOG_COLORS: Record<LogLevel, string> = {
   ffmpeg: '\x1b[35m'
 }
 
+const CONTROL_CHARS = /[\u0000-\u0008\u000a-\u001f\u007f-\u009f\u2028\u2029]/g
+const LINE_BREAKS = /\r\n|[\r\n\u2028\u2029]/
+
+/**
+ * `text` as one printable line for the console and the log files: line breaks and other control characters become
+ * visible escapes, so a file name or an error message cannot start a forged entry or send terminal escape codes.
+ */
+export function oneLine(text: string): string {
+  return text.replace(CONTROL_CHARS, (c) => {
+    if (c === '\n') return '\\n'
+    if (c === '\r') return '\\r'
+    return `\\u${c.charCodeAt(0).toString(16).padStart(4, '0')}`
+  })
+}
+
+/** Multi-line details with every line indented, so no line of a stack trace can pass for an entry of its own. */
+function indentedDetails(details: string): string {
+  return details
+    .split(LINE_BREAKS)
+    .map((line) => `  ${oneLine(line)}`)
+    .join('\n')
+}
+
 /** The catalog number for a job's lines, the run id for a run's, nothing otherwise. */
 function contextPrefix(context: LogContext): string {
   if (context.jobId) return `[${context.jobId}] `
@@ -250,17 +273,17 @@ class Logger {
    */
   write(line: LogLine): LogEntry {
     const entry = this.record(line)
-    const prefix = contextPrefix(entry)
+    const text = oneLine(`${contextPrefix(entry)}${entry.message}`)
     const level = entry.level.toUpperCase()
-    console.log(`${LOG_COLORS[entry.level]}[${entry.timestamp}] [${level}] ${prefix}${entry.message}\x1b[0m`)
+    console.log(`${LOG_COLORS[entry.level]}[${entry.timestamp}] [${level}] ${text}\x1b[0m`)
 
     if (entry.level === 'ffmpeg') {
       if (this.ffmpegLogFile) {
-        fs.appendFile(this.ffmpegLogFile, `${entry.timestamp} | ${prefix}${entry.message}\n`, () => {})
+        fs.appendFile(this.ffmpegLogFile, `${entry.timestamp} | ${text}\n`, () => {})
       }
     } else if (this.logFile) {
-      const details = entry.details ? '\n  ' + entry.details : ''
-      fs.appendFile(this.logFile, `${entry.timestamp} | ${level.padEnd(7)} | ${prefix}${entry.message}${details}\n`, () => {})
+      const details = entry.details ? '\n' + indentedDetails(entry.details) : ''
+      fs.appendFile(this.logFile, `${entry.timestamp} | ${level.padEnd(7)} | ${text}${details}\n`, () => {})
     }
     return entry
   }
@@ -295,7 +318,7 @@ class Logger {
   ffmpeg(tag: string, msg: string): void {
     const entry = this.record({ level: 'ffmpeg', message: `[${tag}] ${msg}` })
     if (this.ffmpegLogFile) {
-      fs.appendFile(this.ffmpegLogFile, `${entry.timestamp} | ${tag} | ${msg}\n`, () => {})
+      fs.appendFile(this.ffmpegLogFile, `${entry.timestamp} | ${oneLine(tag)} | ${oneLine(msg)}\n`, () => {})
     }
   }
 

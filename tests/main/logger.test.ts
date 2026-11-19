@@ -18,7 +18,7 @@ vi.mock('../../src/main/config', () => ({
 }))
 
 // Import after mocks
-const { logger, MAX_BUFFER_ENTRIES, BATCH_INTERVAL_MS, installCrashHandlers } = await import('../../src/main/logger')
+const { logger, MAX_BUFFER_ENTRIES, BATCH_INTERVAL_MS, installCrashHandlers, oneLine } = await import('../../src/main/logger')
 
 describe('Logger', () => {
   beforeEach(() => {
@@ -391,6 +391,28 @@ describe('Logger', () => {
       expect(String(file)).toContain('ffmpeg-debug-')
       expect(written).toContain('[MM-0005] Stream #0:0: Audio: flac')
     })
+
+    it('keeps a message with line breaks or escape codes on its own line, in the file and on the console', () => {
+      vi.mocked(console.log).mockClear()
+      logger.child({ jobId: 'MM-0007' }).error('Could not open a\nb.mp3\r\u001b[2J', 'Error: x\n    at f (a.ts:1:2)\r\n    at g\u2028forged')
+      const lines = (vi.mocked(fs.appendFile).mock.calls[0][1] as string).split('\n')
+      expect(lines[0]).toMatch(/\| ERROR {3}\| \[MM-0007\] Could not open a\\nb\.mp3\\r\\u001b\[2J$/)
+      expect(lines.slice(1)).toEqual(['  Error: x', '      at f (a.ts:1:2)', '      at g', '  forged', ''])
+      const shown = vi.mocked(console.log).mock.calls[0][0] as string
+      expect(shown).toContain('[MM-0007] Could not open a\\nb.mp3\\r\\u001b[2J\x1b[0m')
+      expect(shown.split('\x1b')).toHaveLength(3)
+      expect(logger.getBuffer().at(-1)?.message).toBe('Could not open a\nb.mp3\r\u001b[2J')
+    })
+
+    it('escapes FFmpeg tags and lines the same way', () => {
+      logger.ffmpeg('PROBE\n', 'line\nforged')
+      expect(vi.mocked(fs.appendFile).mock.calls[0][1]).toMatch(/ \| PROBE\\n \| line\\nforged\n$/)
+    })
+  })
+
+  it('keeps tabs and printable text, and escapes every other control character', () => {
+    expect(oneLine('a\tb é ✓ 漢字')).toBe('a\tb é ✓ 漢字')
+    expect(oneLine('\u0000\u0007\n\r\u001b\u007f\u009b\u2028\u2029')).toBe('\\u0000\\u0007\\n\\r\\u001b\\u007f\\u009b\\u2028\\u2029')
   })
 
   it('initializes log file paths and writes to files', () => {
