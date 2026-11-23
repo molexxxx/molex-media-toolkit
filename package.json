@@ -55,7 +55,7 @@
     "react-dropzone": "^20.2.0",
     "tailwindcss": "^4.3.5",
     "typescript": "^7.0.2",
-    "vitest": "^5.1.0",
+    "vitest": "^5.1.1",
     "zero-http": "^0.8.7",
     "zustand": "^5.1.0"
   }
